@@ -1,1 +1,1 @@
-# polaris-accessories
+# polaris-dashboard
