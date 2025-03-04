@@ -1,9 +1,9 @@
-// backend/main.go
 package main
 
 import (
-    "fmt"
-    "net/http"
+	"fmt"
+	"net/http"
+	"os"
 )
 
 func messageHandler(w http.ResponseWriter, r *http.Request) {
@@ -14,7 +14,12 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
     http.HandleFunc("/", messageHandler)
 
-    port := "8080"
+    // Use environment variable for the port, default to 8080
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080"
+    }
+
     fmt.Printf("Go server is running at http://localhost:%s\n", port)
     if err := http.ListenAndServe(":"+port, nil); err != nil {
         fmt.Println("Failed to start server:", err)
