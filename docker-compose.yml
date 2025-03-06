@@ -36,5 +36,15 @@ services:
         ports:
             - "3000:3000"
 
+    python-loader:
+        build: ./polaris-backend/scripts
+        container_name: python-loader
+        depends_on:
+            - postgres
+        environment:
+            DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris"
+        volumes:
+            - ./polaris-backend/data/can_logs:/app/can_logs
+
 volumes:
     postgres_data:
