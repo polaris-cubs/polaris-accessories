@@ -48,20 +48,18 @@ export const Navbar = () => {
                     </NextLink>
                 </NavbarBrand>
                 <ul className="hidden lg:flex gap-4 justify-start ml-2">
-                    {siteConfig.navItems.map((item) => (
-                        <NavbarItem key={item.href}>
-                            <NextLink
-                                className={clsx(
-                                    linkStyles({ color: "foreground" }),
-                                    "data-[active=true]:text-primary data-[active=true]:font-medium",
-                                )}
-                                color="foreground"
-                                href={item.href}
-                            >
-                                {item.label}
-                            </NextLink>
-                        </NavbarItem>
-                    ))}
+                    <NavbarItem>
+                        <NextLink href="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</NextLink>
+                    </NavbarItem>
+                    <NavbarItem>
+                        <NextLink href="/my-data" className="text-gray-700 hover:text-blue-600 font-medium">My Data</NextLink>
+                    </NavbarItem>
+                    <NavbarItem>
+                        <NextLink href="/our-data" className="text-gray-700 hover:text-blue-600 font-medium">Our Data</NextLink>
+                    </NavbarItem>
+                    <NavbarItem>
+                        <NextLink href="/settings" className="text-gray-700 hover:text-blue-600 font-medium">Settings</NextLink>
+                    </NavbarItem>
                 </ul>
             </NavbarContent>
 
@@ -82,17 +80,18 @@ export const Navbar = () => {
 
             <NavbarMenu>
                 <div className="mx-4 mt-2 flex flex-col gap-2">
-                    {siteConfig.navMenuItems.map((item, index) => (
-                        <NavbarMenuItem key={`${item}-${index}`}>
-                            <Link
-                                color={index === 1 ? "primary" : index === siteConfig.navMenuItems.length - 1 ? "danger" : "foreground"}
-                                href="#"
-                                size="lg"
-                            >
-                                {item.label}
-                            </Link>
-                        </NavbarMenuItem>
-                    ))}
+                    <NavbarMenuItem>
+                        <NextLink href="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</NextLink>
+                    </NavbarMenuItem>
+                    <NavbarMenuItem>
+                        <NextLink href="/my-data" className="text-gray-700 hover:text-blue-600 font-medium">My Data</NextLink>
+                    </NavbarMenuItem>
+                    <NavbarMenuItem>
+                        <NextLink href="/our-data" className="text-gray-700 hover:text-blue-600 font-medium">Our Data</NextLink>
+                    </NavbarMenuItem>
+                    <NavbarMenuItem>
+                        <NextLink href="/settings" className="text-gray-700 hover:text-blue-600 font-medium">Settings</NextLink>
+                    </NavbarMenuItem>
                 </div>
             </NavbarMenu>
         </HeroUINavbar>
