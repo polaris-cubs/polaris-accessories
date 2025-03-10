@@ -61,16 +61,56 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// Example: getDataHandler queries the database and returns sample data.
-func getDataHandler(w http.ResponseWriter, r *http.Request) {
-	// Example query: Adjust this query to suit your actual schema and data
-	rows, err := db.Query("SELECT id, log_time, variable, value, vehicle_type FROM can_logs LIMIT 10")
+// getLogData dynamically builds a query based on query parameters.
+func getLogData(w http.ResponseWriter, r *http.Request) {
+	// Retrieve query parameters
+	vehicle := r.URL.Query().Get("vehicle")
+	variable := r.URL.Query().Get("variable")
+	start := r.URL.Query().Get("start")
+	end := r.URL.Query().Get("end")
+	valueParam := r.URL.Query().Get("value")
+
+	// Base query
+	query := "SELECT id, log_time, variable, value, vehicle_type FROM can_logs WHERE 1=1"
+	var params []interface{}
+	paramCount := 1
+
+	if vehicle != "" {
+		query += fmt.Sprintf(" AND vehicle_type = $%d", paramCount)
+		params = append(params, vehicle)
+		paramCount++
+	}
+	if variable != "" {
+		query += fmt.Sprintf(" AND variable = $%d", paramCount)
+		params = append(params, variable)
+		paramCount++
+	}
+	if start != "" {
+		query += fmt.Sprintf(" AND log_time >= $%d", paramCount)
+		params = append(params, start)
+		paramCount++
+	}
+	if end != "" {
+		query += fmt.Sprintf(" AND log_time <= $%d", paramCount)
+		params = append(params, end)
+		paramCount++
+	}
+	if valueParam != "" {
+		query += fmt.Sprintf(" AND value = $%d", paramCount)
+		params = append(params, valueParam)
+		paramCount++
+	}
+
+	query += " ORDER BY log_time"
+
+	rows, err := db.Query(query, params...)
 	if err != nil {
 		http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
+	// LogEntry represents a row from the database.
 	type LogEntry struct {
 		ID          int    `json:"id"`
 		LogTime     string `json:"log_time"`
@@ -100,7 +140,7 @@ func main() {
 	// Create a new ServeMux and attach handlers
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", messageHandler)
-	mux.HandleFunc("/api/data", getDataHandler) // Example API endpoint
+	mux.HandleFunc("/api/logs", getLogData)
 
 	// Wrap the mux with CORS middleware
 	handler := corsMiddleware(mux)
