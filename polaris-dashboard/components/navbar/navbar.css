@@ -1,0 +1,9 @@
+.navbar-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 256px !important;
+    width: calc(100% - 256px) !important;
+    background-color: white !important;
+    z-index: 50 !important;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1) !important;
+}

@@ -5,7 +5,7 @@ import USMap from "@/components/USMap";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions } from "chart.js";
 import Sidebar from "@/components/sidebar/sidebar";
-import "@/app/dashboard/dashboard.css"; 
+import "@/app/dashboard/dashboard.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -42,8 +42,8 @@ const barOptions: ChartOptions<"bar"> = {
 export default function Dashboard() {
   return (
     <div className="dashboard-container">
-      <Sidebar />
-      {/* Main Content */}
+      <Sidebar /> 
+
       <div className="main-content">
         {/* US Map Section */}
         <div className="map-section">
