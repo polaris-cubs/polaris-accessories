@@ -1,3 +1,5 @@
+import "@/components/navbar/navbar.css"; 
+
 import {
     Navbar as HeroUINavbar,
     NavbarContent,
@@ -10,7 +12,6 @@ import {
 import { Kbd } from "@heroui/kbd";
 import { Link } from "@heroui/link";
 import { Input } from "@heroui/input";
-import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 
@@ -39,14 +40,8 @@ export const Navbar = () => {
     );
 
     return (
-        <HeroUINavbar maxWidth="xl" position="sticky">
+        <HeroUINavbar maxWidth="xl" className="navbar-container">
             <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-                <NavbarBrand as="li" className="gap-3 max-w-fit">
-                    <NextLink className="flex justify-start items-center gap-1" href="/">
-                        <Logo />
-                        <p className="font-bold text-inherit">ACME</p>
-                    </NextLink>
-                </NavbarBrand>
                 <ul className="hidden lg:flex gap-4 justify-start ml-2">
                     <NavbarItem>
                         <NextLink href="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</NextLink>
