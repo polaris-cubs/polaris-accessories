@@ -13,13 +13,13 @@ import { Kbd } from "@heroui/kbd";
 import { Link } from "@heroui/link";
 import { Input } from "@heroui/input";
 import NextLink from "next/link";
-import clsx from "clsx";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { GithubIcon, SearchIcon, Logo } from "@/components/icons";
+import { GithubIcon, SearchIcon } from "@/components/icons";
 
 export const Navbar = () => {
+    /*
     const searchInput = (
         <Input
             aria-label="Search"
@@ -38,54 +38,41 @@ export const Navbar = () => {
             type="search"
         />
     );
-
+*/
     return (
-        <HeroUINavbar maxWidth="xl" className="navbar-container">
-            <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-                <ul className="hidden lg:flex gap-4 justify-start ml-2">
+        <HeroUINavbar maxWidth="xl" className="navbar-container"> 
+            <NavbarContent className="justify-start">
+                <ul className="hidden lg:flex gap-4 ml-4">
                     <NavbarItem>
-                        <NextLink href="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</NextLink>
+                        <NextLink href="/" className="nav-link">Home</NextLink>
                     </NavbarItem>
                     <NavbarItem>
-                        <NextLink href="/my-data" className="text-gray-700 hover:text-blue-600 font-medium">My Data</NextLink>
+                        <NextLink href="/my-data" className="nav-link">My Data</NextLink>
                     </NavbarItem>
                     <NavbarItem>
-                        <NextLink href="/our-data" className="text-gray-700 hover:text-blue-600 font-medium">Our Data</NextLink>
+                        <NextLink href="/our-data" className="nav-link">Our Data</NextLink>
                     </NavbarItem>
                     <NavbarItem>
-                        <NextLink href="/settings" className="text-gray-700 hover:text-blue-600 font-medium">Settings</NextLink>
+                        <NextLink href="/settings" className="nav-link">Settings</NextLink>
                     </NavbarItem>
                 </ul>
             </NavbarContent>
 
-            <NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full" justify="end">
-                <NavbarItem className="hidden sm:flex gap-2">
-                    <ThemeSwitch />
-                </NavbarItem>
-                <NavbarItem className="hidden lg:flex">{searchInput}</NavbarItem>
-            </NavbarContent>
 
-            <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
-                <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-                    <GithubIcon className="text-default-500" />
-                </Link>
-                <ThemeSwitch />
-                <NavbarMenuToggle />
-            </NavbarContent>
 
             <NavbarMenu>
-                <div className="mx-4 mt-2 flex flex-col gap-2">
+                <div className="menu-links">
                     <NavbarMenuItem>
-                        <NextLink href="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</NextLink>
+                        <NextLink href="/" className="nav-link">Home</NextLink>
                     </NavbarMenuItem>
                     <NavbarMenuItem>
-                        <NextLink href="/my-data" className="text-gray-700 hover:text-blue-600 font-medium">My Data</NextLink>
+                        <NextLink href="/my-data" className="nav-link">My Data</NextLink>
                     </NavbarMenuItem>
                     <NavbarMenuItem>
-                        <NextLink href="/our-data" className="text-gray-700 hover:text-blue-600 font-medium">Our Data</NextLink>
+                        <NextLink href="/our-data" className="nav-link">Our Data</NextLink>
                     </NavbarMenuItem>
                     <NavbarMenuItem>
-                        <NextLink href="/settings" className="text-gray-700 hover:text-blue-600 font-medium">Settings</NextLink>
+                        <NextLink href="/settings" className="nav-link">Settings</NextLink>
                     </NavbarMenuItem>
                 </div>
             </NavbarMenu>
