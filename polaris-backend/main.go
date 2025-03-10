@@ -11,7 +11,13 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "Hello from the Go backend!")
 }
 
+func accessoryHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "text/plain")
+    fmt.Fprintln(w, "Hello from " + r.URL.Path + "!")
+}
+
 func main() {
+    http.HandleFunc("/accessory/", accessoryHandler)
     http.HandleFunc("/", messageHandler)
 
     // Use environment variable for the port, default to 8080
