@@ -26,6 +26,8 @@ services:
             DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris"
         ports:
             - "8080:8080"
+        volumes:
+            - ./polaris-backend:/app
 
     frontend:
         build: ./polaris-dashboard
@@ -35,6 +37,9 @@ services:
             - backend
         ports:
             - "3000:3000"
+        volumes:
+            - ./polaris-dashboard:/app
+            - /app/node_modules
 
     python-loader:
         build: ./polaris-backend/scripts

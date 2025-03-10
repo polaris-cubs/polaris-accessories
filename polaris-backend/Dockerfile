@@ -1,17 +1,17 @@
-# Use the official Go image for development
-FROM golang:1.21 AS dev
+FROM golang:1.23
 
-# Set working directory
+# Install Air for hot reloading using the new module path
+RUN go install github.com/air-verse/air@latest
+
 WORKDIR /app
 
-# Copy all project files
+# Copy go.mod and download dependencies
+COPY go.mod .
+RUN go mod download
+
+# Copy the rest of the source code
 COPY . .
 
-# Install dependencies
-RUN go mod tidy
+EXPOSE 8080
 
-# Expose backend port
-EXPOSE 5000
-
-# Run backend in development mode
-CMD ["go", "run", "main.go"]
+CMD ["air"]
