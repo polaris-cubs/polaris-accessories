@@ -5,7 +5,7 @@ FROM node:18 AS dev
 WORKDIR /app
 
 # Copy package.json and package-lock.json first for efficient caching
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm install
