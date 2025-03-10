@@ -1,0 +1,27 @@
+.dashboard-container {
+    display: flex;
+    height: 100vh;
+    background-color: #f3f4f6; 
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 40px;
+}
+
+.map-section {
+    background-color: white;
+    padding: 24px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.chart-section {
+    margin-top: 40px;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
