@@ -23,7 +23,7 @@ services:
             - postgres
         environment:
             PORT: "8080"
-            DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris"
+            DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris?sslmode=disable"
         ports:
             - "8080:8080"
         volumes:
