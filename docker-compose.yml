@@ -12,7 +12,6 @@ services:
         volumes:
             - postgres_data:/var/lib/postgresql/data
             - ./polaris-backend/data/init.sql:/docker-entrypoint-initdb.d/init.sql
-            # - ./polaris-backend/data:/app/csv
 
     backend:
         build: ./polaris-backend

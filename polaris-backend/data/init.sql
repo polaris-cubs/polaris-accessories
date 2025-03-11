@@ -30,5 +30,5 @@ CREATE TABLE IF NOT EXISTS fact_ride_property (
     ride_property_id SERIAL PRIMARY KEY,
     ride_id BIGINT NOT NULL REFERENCES fact_vehicle_ride(ride_id),
     property_id INTEGER NOT NULL REFERENCES dim_property(property_id),
-    value NUMERIC NOT NULL
+    value TEXT NOT NULL
 );
