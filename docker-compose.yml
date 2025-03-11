@@ -12,6 +12,7 @@ services:
         volumes:
             - postgres_data:/var/lib/postgresql/data
             - ./polaris-backend/data/init.sql:/docker-entrypoint-initdb.d/init.sql
+            # - ./polaris-backend/data:/app/csv
 
     backend:
         build: ./polaris-backend
@@ -39,15 +40,16 @@ services:
             - ./polaris-dashboard:/app
             - /app/node_modules
 
-    python-loader:
+    data-loader:
         build: ./polaris-backend/scripts
-        container_name: python-loader
+        container_name: data-loader
         depends_on:
             - postgres
         environment:
-            DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris"
+            DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris?sslmode=disable"
         volumes:
-            - ./polaris-backend/data/can_logs:/app/can_logs
+            - ./polaris-backend/data/csv:/app/csv
+        restart: "no"
 
 volumes:
     postgres_data:
