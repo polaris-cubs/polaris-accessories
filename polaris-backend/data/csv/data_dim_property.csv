@@ -1,9 +1,3 @@
-property_id,property_name,property_units
-1,chase_light_state,AMPS
-2,plow_state,STATE DESC
-3,winch_power,AMPS
-4,spreader_fill,PERCENT FULL
-5,audio_system_volume_level,PERCENTAGE
-6,vehicle_engine_speed,MILES PER HOUR
-7,spreader_state,STATE DESC
-8,light_bar_state,AMPS
+version https://git-lfs.github.com/spec/v1
+oid sha256:2c28b591b8a2551ba10445c8d47b43137b2441af107fd8cee1bc2b854505703f
+size 275
