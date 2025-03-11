@@ -1,1 +1,2 @@
 *.csv filter=lfs diff=lfs merge=lfs -text
+polaris-backend/data/csv/data_fact_vehicle_ride.csv filter=lfs diff=lfs merge=lfs -text
