@@ -136,6 +136,8 @@ export default function DetailedCountyMap({ stateName = "Illinois" }) {
                                     <Tooltip key={geo.rsmKey} closeDelay={0} content={geo.properties.name} delay={0}>
                                         <Geography
                                             geography={geo}
+                                            stroke="#FFFFFF"
+                                            strokeWidth={0.2}
                                             style={{
                                                 default: { fill: "#cbe9f2", outline: "none" },
                                                 hover: { fill: "#084c94", outline: "none" },
