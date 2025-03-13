@@ -104,8 +104,8 @@ export default function USDrillDownMap() {
     }
 
     return (
-        <div className="relative justify-items-center" style={{ width: "900px", height: "600px", background: "#f8f9fa" }}>
-            <ComposableMap projection="geoAlbersUsa" style={{ width: "900px", height: "600px" }}>
+        <div className="relative justify-items-center" style={{ width: "1200px", height: "800px", background: "#f8f9fa" }}>
+            <ComposableMap projection="geoAlbersUsa" style={{ width: "1200px", height: "800px" }}>
                 <ZoomableGroup>
                     <Geographies geography={usGeoUrl}>
                         {({ geographies, projection }) =>

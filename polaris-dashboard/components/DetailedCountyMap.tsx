@@ -126,7 +126,7 @@ export default function DetailedCountyMap({ stateName = "Illinois" }) {
 
     return (
         <div className="relative justify-items-center">
-            <ComposableMap className="w-full h-[700px] w-[700px] bg-white shadow-md rounded-lg" projection="geoAlbersUsa">
+            <ComposableMap className="w-full h-[800px] w-[1200px] bg-white shadow-md rounded-lg" projection="geoAlbersUsa">
                 <ZoomableGroup center={center} zoom={zoom}>
                     <Geographies geography={geoUrl}>
                         {({ geographies }) =>
