@@ -1,3 +1,4 @@
 # GO tmp
 /tmp/
 /tmp/*
+.DS_Store

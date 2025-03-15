@@ -10,6 +10,7 @@ Thumbs.db
 polaris-backend/tmp/
 polaris-backend/tmp/*
 polaris-backend/bin/
+polaris-backend/.DS_Store
 
 # ----------------------------
 # Next.js Frontend (polaris-dashboard)
