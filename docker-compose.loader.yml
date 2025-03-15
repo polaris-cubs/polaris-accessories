@@ -1,0 +1,9 @@
+services:
+  data-loader:
+    build: ./polaris-backend/scripts
+    container_name: data-loader
+    environment:
+      DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris?sslmode=disable"
+    volumes:
+      - ./polaris-backend/data/csv:/app/csv
+    restart: "no"

@@ -39,16 +39,16 @@ services:
             - ./polaris-dashboard:/app
             - /app/node_modules
 
-    data-loader:
-        build: ./polaris-backend/scripts
-        container_name: data-loader
-        depends_on:
-            - postgres
-        environment:
-            DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris?sslmode=disable"
-        volumes:
-            - ./polaris-backend/data/csv:/app/csv
-        restart: "no"
+    # data-loader:
+    #     build: ./polaris-backend/scripts
+    #     container_name: data-loader
+    #     depends_on:
+    #         - postgres
+    #     environment:
+    #         DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris?sslmode=disable"
+    #     volumes:
+    #         - ./polaris-backend/data/csv:/app/csv
+    #     restart: "no"
 
 volumes:
     postgres_data:
