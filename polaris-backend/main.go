@@ -446,18 +446,197 @@ func getStateDetail(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(details)
 }
 
+// getUniqueStates returns a unique list of states from dim_customer.
+func getUniqueStates(w http.ResponseWriter, r *http.Request) {
+	query := `SELECT DISTINCT state FROM dim_customer ORDER BY state;`
+	rows, err := db.Query(query)
+	if err != nil {
+		http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var states []string
+	for rows.Next() {
+		var state string
+		if err := rows.Scan(&state); err != nil {
+			http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		states = append(states, state)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(states)
+}
+
+// getUniqueVehicleIDs returns a unique list of vehicle IDs from fact_vehicle_ride.
+func getUniqueVehicleIDs(w http.ResponseWriter, r *http.Request) {
+	query := `SELECT DISTINCT vehicle_id FROM fact_vehicle_ride ORDER BY vehicle_id;`
+	rows, err := db.Query(query)
+	if err != nil {
+		http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var vehicleIDs []string
+	for rows.Next() {
+		var vid string
+		if err := rows.Scan(&vid); err != nil {
+			http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		vehicleIDs = append(vehicleIDs, vid)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(vehicleIDs)
+}
+
+// getUniqueCustomerIDs returns a unique list of customer IDs from fact_vehicle_ride.
+func getUniqueCustomerIDs(w http.ResponseWriter, r *http.Request) {
+	query := `SELECT DISTINCT customer_id FROM fact_vehicle_ride ORDER BY customer_id;`
+	rows, err := db.Query(query)
+	if err != nil {
+		http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var customerIDs []string
+	for rows.Next() {
+		var cid string
+		if err := rows.Scan(&cid); err != nil {
+			http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		customerIDs = append(customerIDs, cid)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(customerIDs)
+}
+
+// getUniqueVehicles returns a unique list of vehicle brands from dim_vehicle.
+func getUniqueVehicles(w http.ResponseWriter, r *http.Request) {
+	query := `SELECT DISTINCT brand FROM dim_vehicle ORDER BY brand;`
+	rows, err := db.Query(query)
+	if err != nil {
+		http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var vehicles []string
+	for rows.Next() {
+		var brand string
+		if err := rows.Scan(&brand); err != nil {
+			http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		vehicles = append(vehicles, brand)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(vehicles)
+}
+
+func getSnowplowUsagePerRide(w http.ResponseWriter, r *http.Request) {
+    stateFilter := r.URL.Query().Get("state")
+    vehicleIDFilter := r.URL.Query().Get("vehicle_id")
+    customerIDFilter := r.URL.Query().Get("customer_id")
+    vehicleFilter := r.URL.Query().Get("vehicle")
+    startDate := r.URL.Query().Get("start")
+    endDate := r.URL.Query().Get("end")
+
+    query := `
+        SELECT DATE(r.event_timestamp) AS ride_date, COUNT(DISTINCT r.ride_id) AS uses
+        FROM fact_vehicle_ride r
+        JOIN fact_ride_property rp ON r.ride_id = rp.ride_id
+        JOIN dim_customer c ON r.customer_id = c.customer_id
+        JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+        WHERE rp.property_id = 6 AND LOWER(rp.value) = 'down'
+    `
+    var params []interface{}
+    paramIdx := 1
+
+    if stateFilter != "" {
+        query += fmt.Sprintf(" AND c.state = $%d", paramIdx)
+        params = append(params, stateFilter)
+        paramIdx++
+    }
+    if vehicleIDFilter != "" {
+        query += fmt.Sprintf(" AND r.vehicle_id = $%d", paramIdx)
+        params = append(params, vehicleIDFilter)
+        paramIdx++
+    }
+    if customerIDFilter != "" {
+        query += fmt.Sprintf(" AND r.customer_id = $%d", paramIdx)
+        params = append(params, customerIDFilter)
+        paramIdx++
+    }
+    if vehicleFilter != "" {
+        query += fmt.Sprintf(" AND v.brand = $%d", paramIdx)
+        params = append(params, vehicleFilter)
+        paramIdx++
+    }
+    if startDate != "" {
+        query += fmt.Sprintf(" AND r.event_timestamp >= $%d", paramIdx)
+        params = append(params, startDate)
+        paramIdx++
+    }
+    if endDate != "" {
+        query += fmt.Sprintf(" AND r.event_timestamp <= $%d", paramIdx)
+        params = append(params, endDate)
+        paramIdx++
+    }
+
+    query += " GROUP BY ride_date ORDER BY ride_date;"
+
+    rows, err := db.Query(query, params...)
+    if err != nil {
+        http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
+
+    type SnowplowUsage struct {
+        RideDate string  `json:"ride_date"`
+        Uses     int     `json:"uses"`
+    }
+    var usage []SnowplowUsage
+    for rows.Next() {
+        var s SnowplowUsage
+        if err := rows.Scan(&s.RideDate, &s.Uses); err != nil {
+            http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
+            return
+        }
+        usage = append(usage, s)
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(usage)
+}
+
 func main() {
 	initDB()
 	defer db.Close()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", messageHandler)
+
+	// Endpoints for data summaries:
 	mux.HandleFunc("/api/us-summary", getUsSummary)
 	mux.HandleFunc("/api/rides", getRideDetails)
 	mux.HandleFunc("/api/accessory-summary", getAccessorySummary)
 	mux.HandleFunc("/api/vehicle-summary", getVehicleSummary)
 	mux.HandleFunc("/api/time-series", getTimeSeries)
 	mux.HandleFunc("/api/state-detail", getStateDetail)
+
+	// Endpoints for unique lists:
+	mux.HandleFunc("/api/state", getUniqueStates)
+	mux.HandleFunc("/api/vehicle-id", getUniqueVehicleIDs)
+	mux.HandleFunc("/api/customer-id", getUniqueCustomerIDs)
+	mux.HandleFunc("/api/vehicle", getUniqueVehicles)
+
+	// Endpoints for accessory usage:
+	mux.HandleFunc("/api/snowplow-usage", getSnowplowUsagePerRide)
 
 	handler := corsMiddleware(mux)
 
