@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ComposableMap, Geographies, Geography, Annotation, ZoomableGroup } from "react-simple-maps";
-import { Tooltip } from "@heroui/react";
+import { Popover, PopoverTrigger, PopoverContent, Button } from "@heroui/react";
 import { geoCentroid } from "d3-geo";
 
 const usGeoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
@@ -91,45 +91,104 @@ export default function USDrillDownMap({ usSummary, onStateSelect }) {
                                         ? { stroke: "#57a2b5", strokeWidth: 1, strokeLinecap: "round" }
                                         : { stroke: "none" };
 
-                                // Find aggregated data for the state from usSummary.
+                                // Find aggregated data for the state if available.
                                 const stateData = usSummary.find((s) => s.state === stateName);
-                                const tooltipContent = stateData
-                                    ? `${stateName}\nVehicles: ${stateData.vehicles}\nRides: ${stateData.rides}`
-                                    : stateName;
+                                const popoverContent = (
+                                    <div className="p-2">
+                                        <div className="text-sm font-bold">{stateName}</div>
+                                        {stateData && (
+                                            <>
+                                                <div className="text-xs mt-2">
+                                                    Vehicles: {stateData.vehicles} <br />
+                                                    Rides: {stateData.rides} <br />
+                                                    Customers: {stateData.customers}
+                                                    {stateData.brand_averages && (
+                                                        // <>
+                                                        //     <br />
+                                                        //     {stateData.brand_averages.map((brandObj) => (
+                                                        //         <>
+                                                        //             <div className="text-xs mt-2">
+                                                        //                 {brandObj.brand} <br />
+                                                        //                 <ul>
+                                                        //                     <li>Rides: {brandObj.rides}</li>
+                                                        //                     <li>Vehicles: {brandObj.vehicles}</li>
+                                                        //                     <li>Avg Rides: {brandObj.avg_rides}</li>
+                                                        //                 </ul>
+                                                        //             </div>
+                                                        //         </>
+                                                        //     ))}
+                                                        // </>
+                                                        <>
+                                                            {stateData.brand_averages.map((brandObj) => (
+                                                                <>
+                                                                    <div className="text-xs">
+                                                                        {brandObj.brand}: {brandObj.vehicles}
+                                                                    </div>
+                                                                </>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                        <div className="pt-2">
+                                            <Button
+                                                className="bg-[#084c94] text-white"
+                                                size="sm"
+                                                variant="flat"
+                                                onPress={() => onStateSelect(stateName)}
+                                            >
+                                                View state details
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
 
                                 return (
                                     <g key={geo.rsmKey}>
-                                        <Tooltip closeDelay={0} content={tooltipContent} delay={0}>
-                                            <g style={{ cursor: "pointer" }} onClick={() => onStateSelect(stateName)}>
-                                                <Geography
-                                                    fill="#cbe9f2"
-                                                    geography={geo}
-                                                    stroke="#FFFFFF"
-                                                    strokeWidth={1}
-                                                    style={{
-                                                        default: { outline: "none" },
-                                                        hover: { outline: "none", fill: "#084c94" },
-                                                        pressed: { outline: "none", fill: "#B0BEC5" },
-                                                    }}
-                                                />
-                                            </g>
-                                        </Tooltip>
-                                        {cx && cy && (
-                                            <Annotation connectorProps={connector} dx={offset.dx} dy={offset.dy} subject={centroid}>
-                                                <text
-                                                    alignmentBaseline="middle"
-                                                    fill="#57a2b5"
-                                                    fontSize={12}
-                                                    fontWeight="bold"
-                                                    style={{ cursor: "pointer", pointerEvents: "all" }}
-                                                    textAnchor={offset.dx !== 0 || offset.dy !== 0 ? "end" : "middle"}
-                                                    x={offset.dx !== 0 || offset.dy !== 0 ? "20" : undefined}
-                                                    onClick={() => onStateSelect(stateName)}
-                                                >
-                                                    {abbr}
-                                                </text>
-                                            </Annotation>
-                                        )}
+                                        <Popover
+                                            containerPadding={0}
+                                            placement="top"
+                                            portalContainer={document.body}
+                                            triggerScaleOnOpen={false}
+                                        >
+                                            <PopoverTrigger>
+                                                <g style={{ cursor: "pointer" }}>
+                                                    <Geography
+                                                        fill="#cbe9f2"
+                                                        geography={geo}
+                                                        stroke="#FFFFFF"
+                                                        strokeWidth={1}
+                                                        style={{
+                                                            default: { outline: "none" },
+                                                            hover: { outline: "none", fill: "#084c94" },
+                                                            pressed: { outline: "none", fill: "#B0BEC5" },
+                                                        }}
+                                                    />
+                                                    {cx && cy && (
+                                                        <Annotation
+                                                            connectorProps={connector}
+                                                            dx={offset.dx}
+                                                            dy={offset.dy}
+                                                            subject={centroid}
+                                                        >
+                                                            <text
+                                                                alignmentBaseline="middle"
+                                                                fill="#57a2b5"
+                                                                fontSize={12}
+                                                                fontWeight="bold"
+                                                                style={{ pointerEvents: "none" }}
+                                                                textAnchor={offset.dx !== 0 || offset.dy !== 0 ? "end" : "middle"}
+                                                                x={offset.dx !== 0 || offset.dy !== 0 ? "20" : undefined}
+                                                            >
+                                                                {abbr}
+                                                            </text>
+                                                        </Annotation>
+                                                    )}
+                                                </g>
+                                            </PopoverTrigger>
+                                            <PopoverContent>{popoverContent}</PopoverContent>
+                                        </Popover>
                                     </g>
                                 );
                             })

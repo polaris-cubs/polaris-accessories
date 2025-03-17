@@ -63,43 +63,159 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 // getUsSummary returns state-level aggregates (rides and distinct vehicles),
 // with optional filtering by state, vehicle_id, customer_id, and vehicle (brand).
 func getUsSummary(w http.ResponseWriter, r *http.Request) {
-	stateFilter := r.URL.Query().Get("state")
+	// Optional filters (vehicle_id, customer_id)
 	vehicleIDFilter := r.URL.Query().Get("vehicle_id")
 	customerIDFilter := r.URL.Query().Get("customer_id")
-	vehicleFilter := r.URL.Query().Get("vehicle") // brand
-
-	query := `
-		SELECT c.state, COUNT(*) AS rides, COUNT(DISTINCT r.vehicle_id) AS vehicles
-		FROM fact_vehicle_ride r
-		JOIN dim_customer c ON r.customer_id = c.customer_id
-		JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
-		WHERE 1=1
-	`
 	var params []interface{}
 	paramIdx := 1
-	if stateFilter != "" {
-		query += fmt.Sprintf(" AND c.state = $%d", paramIdx)
-		params = append(params, stateFilter)
-		paramIdx++
-	}
+
+	// CTE: All states from a static list.
+	allStatesCTE := `
+		WITH all_states AS (
+			SELECT * FROM (VALUES
+				('Alabama'),
+				('Alaska'),
+				('Arizona'),
+				('Arkansas'),
+				('California'),
+				('Colorado'),
+				('Connecticut'),
+				('Delaware'),
+				('District of Columbia'),
+				('Florida'),
+				('Georgia'),
+				('Hawaii'),
+				('Idaho'),
+				('Illinois'),
+				('Indiana'),
+				('Iowa'),
+				('Kansas'),
+				('Kentucky'),
+				('Louisiana'),
+				('Maine'),
+				('Maryland'),
+				('Massachusetts'),
+				('Michigan'),
+				('Minnesota'),
+				('Mississippi'),
+				('Missouri'),
+				('Montana'),
+				('Nebraska'),
+				('Nevada'),
+				('New Hampshire'),
+				('New Jersey'),
+				('New Mexico'),
+				('New York'),
+				('North Carolina'),
+				('North Dakota'),
+				('Ohio'),
+				('Oklahoma'),
+				('Oregon'),
+				('Pennsylvania'),
+				('Rhode Island'),
+				('South Carolina'),
+				('South Dakota'),
+				('Tennessee'),
+				('Texas'),
+				('Utah'),
+				('Vermont'),
+				('Virginia'),
+				('Washington'),
+				('West Virginia'),
+				('Wisconsin'),
+				('Wyoming')
+			) AS t(state)
+		)
+	`
+
+	// CTE: Dynamic list of all vehicle brands from dim_vehicle.
+	allBrandsCTE := `
+		, all_brands AS (
+			SELECT DISTINCT brand FROM dim_vehicle ORDER BY brand
+		)
+	`
+
+	// CTE: Overall ride aggregates per state.
+	rideAggCTE := `
+		, rideAgg AS (
+			SELECT c.state, 
+			       COUNT(*) AS rides, 
+			       COUNT(DISTINCT r.vehicle_id) AS vehicles,
+			       COUNT(DISTINCT r.customer_id) AS customers
+			FROM fact_vehicle_ride r
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			WHERE 1=1
+	`
 	if vehicleIDFilter != "" {
-		query += fmt.Sprintf(" AND r.vehicle_id = $%d", paramIdx)
+		rideAggCTE += fmt.Sprintf(" AND r.vehicle_id = $%d", paramIdx)
 		params = append(params, vehicleIDFilter)
 		paramIdx++
 	}
 	if customerIDFilter != "" {
-		query += fmt.Sprintf(" AND r.customer_id = $%d", paramIdx)
+		rideAggCTE += fmt.Sprintf(" AND r.customer_id = $%d", paramIdx)
 		params = append(params, customerIDFilter)
 		paramIdx++
 	}
-	if vehicleFilter != "" {
-		query += fmt.Sprintf(" AND v.brand = $%d", paramIdx)
-		params = append(params, vehicleFilter)
+	rideAggCTE += " GROUP BY c.state)"
+
+	// CTE: Brand-level aggregates per state.
+	brandAggCTE := `
+		, brandAgg AS (
+			SELECT c.state, v.brand,
+			       COUNT(*) AS rides,
+			       COUNT(DISTINCT r.vehicle_id) AS vehicles
+			FROM fact_vehicle_ride r
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+			WHERE 1=1
+	`
+	if vehicleIDFilter != "" {
+		brandAggCTE += fmt.Sprintf(" AND r.vehicle_id = $%d", paramIdx)
+		params = append(params, vehicleIDFilter)
 		paramIdx++
 	}
-	query += " GROUP BY c.state ORDER BY rides DESC;"
+	if customerIDFilter != "" {
+		brandAggCTE += fmt.Sprintf(" AND r.customer_id = $%d", paramIdx)
+		params = append(params, customerIDFilter)
+		paramIdx++
+	}
+	brandAggCTE += " GROUP BY c.state, v.brand)"
 
-	rows, err := db.Query(query, params...)
+	// CTE: For each state, cross join with all brands and LEFT JOIN with brandAgg.
+	brandDataCTE := `
+		, brandData AS (
+		    SELECT s.state,
+		           json_agg(
+		             json_build_object(
+		               'brand', ab.brand,
+		               'rides', COALESCE(ba.rides, 0),
+		               'vehicles', COALESCE(ba.vehicles, 0),
+		               'avg_rides', CASE WHEN COALESCE(ba.vehicles, 0) = 0 THEN 0 ELSE ROUND(COALESCE(ba.rides, 0)::numeric / COALESCE(ba.vehicles, 0), 2) END
+		             ) ORDER BY ab.brand
+		           ) AS brand_averages
+		    FROM all_states s
+		    CROSS JOIN all_brands ab
+		    LEFT JOIN ( SELECT * FROM ( ` + brandAggCTE + ` ) AS raw ) ba
+		      ON s.state = ba.state AND ab.brand = ba.brand
+		    GROUP BY s.state
+		)
+	`
+
+	// Outer query: join all_states with rideAgg and brandData.
+	finalQuery := allStatesCTE + allBrandsCTE + rideAggCTE + brandAggCTE + brandDataCTE + `
+		SELECT a.state, 
+		       COALESCE(r.rides, 0) AS rides, 
+		       COALESCE(r.vehicles, 0) AS vehicles,
+		       COALESCE(r.customers, 0) AS customers,
+		       CASE WHEN COALESCE(r.vehicles, 0) = 0 THEN 0 ELSE ROUND(r.rides::numeric / r.vehicles, 2) END AS avg_rides_per_vehicle,
+		       COALESCE(b.brand_averages, '[]'::json) AS brand_averages
+		FROM all_states a
+		LEFT JOIN rideAgg r ON a.state = r.state
+		LEFT JOIN brandData b ON a.state = b.state
+		ORDER BY a.state;
+	`
+
+	rows, err := db.Query(finalQuery, params...)
 	if err != nil {
 		http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -107,14 +223,17 @@ func getUsSummary(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type StateSummary struct {
-		State    string `json:"state"`
-		Rides    int    `json:"rides"`
-		Vehicles int    `json:"vehicles"`
+		State              string          `json:"state"`
+		Rides              int             `json:"rides"`
+		Vehicles           int             `json:"vehicles"`
+		Customers          int             `json:"customers"`
+		AvgRidesPerVehicle float64         `json:"avg_rides_per_vehicle"`
+		BrandAverages      json.RawMessage `json:"brand_averages"`
 	}
 	var summaries []StateSummary
 	for rows.Next() {
 		var s StateSummary
-		if err := rows.Scan(&s.State, &s.Rides, &s.Vehicles); err != nil {
+		if err := rows.Scan(&s.State, &s.Rides, &s.Vehicles, &s.Customers, &s.AvgRidesPerVehicle, &s.BrandAverages); err != nil {
 			http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
