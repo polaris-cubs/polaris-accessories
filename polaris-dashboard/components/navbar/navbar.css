@@ -1,0 +1,29 @@
+.navbar-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 256px !important;
+    width: calc(100% - 256px) !important;
+    background-color: white !important;
+    z-index: 50 !important;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: #1e293b;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.nav-link:hover {
+    background-color: #004E97;
+    color: #ffffff;
+}
+
+.menu-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
