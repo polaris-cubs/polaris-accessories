@@ -4,7 +4,7 @@ import React from "react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import DetailedCountyMap from "@/components/DetailedCountyMap";
-import { Bar } from "react-chartjs-2"'; 
+import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
