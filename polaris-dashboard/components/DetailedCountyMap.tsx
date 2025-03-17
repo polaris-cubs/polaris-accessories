@@ -3,9 +3,14 @@
 import React from "react";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import { Tooltip } from "@heroui/react";
+import { useRouter } from "next/navigation"; 
+import useSWR from "swr";
+
 
 // GeoJSON source for US counties
 const geoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json";
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 
 // Mapping of state names to their two-digit FIPS prefixes
 const stateFipsMapping = {
@@ -115,41 +120,101 @@ const stateCenterMapping = {
     Wyoming: { center: [-107.2903, 43.07597], zoom: 5 },
 };
 
-export default function DetailedCountyMap({ stateName = "Illinois" }) {
+export default function DetailedCountyMap({ stateName }: { stateName: string }) {
+    const router = useRouter();
+
     const stateFips = stateFipsMapping[stateName];
 
+    const { data: vehicleData, error: vehicleError } = useSWR(
+        `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(stateName)}`,
+        fetcher
+    );
+    
+    const { data: accessoryData, error: accessoryError } = useSWR(
+        `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(stateName)}`,
+        fetcher
+    );
+
     if (!stateFips) {
-        return <div>No FIPS mapping available for {stateName}</div>;
+        return <div className="text-red-500">❌ No FIPS mapping available for {stateName}</div>;
     }
 
+    
+            
+    
     const { center, zoom } = stateCenterMapping[stateName] || { center: [-98, 39], zoom: 5 };
 
     return (
-        <div className="relative justify-items-center h-[800px] w-[1200px]">
-            <ComposableMap className="w-full h-[800px] w-[1200px] bg-white shadow-md rounded-lg" projection="geoAlbersUsa">
-                <ZoomableGroup center={center} zoom={zoom}>
-                    <Geographies geography={geoUrl}>
-                        {({ geographies }) =>
-                            geographies
-                                .filter((geo) => geo.id && geo.id.startsWith(stateFips))
-                                .map((geo) => (
-                                    <Tooltip key={geo.rsmKey} closeDelay={0} content={geo.properties.name} delay={0}>
-                                        <Geography
-                                            geography={geo}
-                                            stroke="#FFFFFF"
-                                            strokeWidth={0.2}
-                                            style={{
-                                                default: { fill: "#cbe9f2", outline: "none" },
-                                                hover: { fill: "#084c94", outline: "none" },
-                                                pressed: { fill: "#E42", outline: "none" },
-                                            }}
-                                        />
-                                    </Tooltip>
-                                ))
-                        }
-                    </Geographies>
-                </ZoomableGroup>
-            </ComposableMap>
+        <div className="relative flex flex-col items-center">
+
+
+            <div className="w-[800px] h-[600px] bg-white shadow-md rounded-lg p-4">
+                <ComposableMap projection="geoAlbersUsa">
+                    <ZoomableGroup center={center} zoom={zoom}>
+                        <Geographies geography={geoUrl}>
+                            {({ geographies }) =>
+                                geographies
+                                    .filter((geo) => geo.id && geo.id.startsWith(stateFips)) 
+                                    .map((geo) => (
+                                        <Tooltip key={geo.rsmKey} content={geo.properties.name}>
+                                            <Geography
+                                                geography={geo}
+                                                stroke="#FFFFFF"
+                                                strokeWidth={0.2}
+                                                style={{
+                                                    default: { fill: "#3B82F6", outline: "none" },
+                                                    hover: { fill: "#1E40AF", outline: "none" },
+                                                    pressed: { fill: "#E42", outline: "none" },
+                                                }}
+                                            />
+                                        </Tooltip>
+                                    ))
+                            }
+                        </Geographies>
+                    </ZoomableGroup>
+                </ComposableMap>
+            </div>
+
+            <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-4 mt-6">
+                <h3 className="text-lg font-semibold">🚗 Vehicle Usage Summary</h3>
+                {vehicleError ? (
+                    <p className="text-red-500">Error loading vehicle data</p>
+                ) : !vehicleData ? (
+                    <p>Loading vehicle data...</p>
+                ) : (
+                    <ul className="list-disc pl-6">
+                        {vehicleData.map((vehicle: any, index: number) => (
+                            <li key={index}>
+                                {vehicle.brand}: {vehicle.rides} rides ({vehicle.vehicles} unique vehicles)
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-4 mt-6">
+                <h3 className="text-lg font-semibold">🔧 Most Used Accessories</h3>
+                {accessoryError ? (
+                    <p className="text-red-500">Error loading accessory data</p>
+                ) : !accessoryData ? (
+                    <p>Loading accessory data...</p>
+                ) : (
+                    <ul className="list-disc pl-6">
+                        {accessoryData.map((accessory: any, index: number) => (
+                            <li key={index}>
+                                {accessory.property_name}: {accessory.usage_count} uses
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            <button
+                onClick={() => router.push(`/state/${stateName}`)}
+                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            >
+                View Detailed Data for {stateName}
+            </button>
         </div>
     );
 }

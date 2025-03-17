@@ -4,8 +4,10 @@ import React from "react";
 import { ComposableMap, Geographies, Geography, Annotation, ZoomableGroup } from "react-simple-maps";
 import { Tooltip } from "@heroui/react";
 import { geoCentroid } from "d3-geo";
+import { useRouter } from "next/navigation";
 
 const usGeoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
+
 
 const stateAbbrMapping = {
     Alabama: "AL",
@@ -73,10 +75,13 @@ const labelOffsets = {
     "District of Columbia": { dx: 50, dy: 50 },
 };
 
+
+
 export default function USDrillDownMap({ usSummary, onStateSelect }) {
+    
     return (
-        <div className="relative" style={{ width: "1200px", height: "800px", background: "#f8f9fa" }}>
-            <ComposableMap projection="geoAlbersUsa" style={{ width: "1200px", height: "800px" }}>
+        <div className="relative" style={{ width: "800px", height: "600px"}}>
+            <ComposableMap projection="geoAlbersUsa" style={{ width: "800px", height: "450px" }}>
                 <ZoomableGroup>
                     <Geographies geography={usGeoUrl}>
                         {({ geographies, projection }) =>

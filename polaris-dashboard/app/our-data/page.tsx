@@ -1,94 +1,97 @@
 "use client";
 
-import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, Title, Tooltip, Legend, PointElement } from "chart.js";
+import React, { useState } from "react";
+import useSWR from "swr";
 import Sidebar from "@/components/sidebar/sidebar";
-import "@/app/our-data/our-data.css";
-import { useState } from "react";
+import "@/app/our-data/our-data.css"; 
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
+const fetcher = (url: string) => fetch(`http://localhost:8080${url}`).then((res) => res.json());
 
 export default function OurData() {
-  const [showTooltip, setShowTooltip] = useState(false);
+    const [selectedState, setSelectedState] = useState<string | null>(null);
+    const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+    const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+    const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
-  //Hardcoded Data 
-  const timeLabels = ["10:00", "10:05", "10:10", "10:15", "10:20"];
-  const snowPlowValues = [1, 0, 1, 0, 1]; // 1 = Up, 0 = Down
-  const speedValues = [30, 35, 40, 45, 50]; 
 
-  const chartData = {
-    labels: timeLabels,
-    datasets: [
-      {
-        type: "bar",
-        label: "Snow Plow (Up/Down)",
-        data: snowPlowValues,
-        backgroundColor: "rgba(75, 192, 192, 0.6)",
-        borderColor: "rgba(75, 192, 192, 1)",
-        borderWidth: 1,
-        yAxisID: "y1",
-        order: 2,
-      },
-      {
-        type: "line",
-        label: "Speed (km/h)",
-        data: speedValues,
-        borderColor: "rgba(255, 99, 132, 1)",
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
-        borderWidth: 2,
-        yAxisID: "y2",
-        order: 1,
-      },
-    ],
-  };
+    const { data: usSummary } = useSWR("/api/us-summary", fetcher);
+    const { data: rides } = useSWR(
+        selectedState || selectedVehicle || selectedCustomer || selectedBrand
+            ? `/api/rides?${selectedState ? `state=${selectedState}&` : ""}${selectedVehicle ? `vehicle_id=${selectedVehicle}&` : ""}${selectedCustomer ? `customer_id=${selectedCustomer}&` : ""}${selectedBrand ? `vehicle=${selectedBrand}` : ""}`
+            : "/api/rides",
+        fetcher
+    );
 
-  const chartOptions = {
-    responsive: true,
-    scales: {
-      y1: {
-        type: "linear",
-        position: "left",
-        title: {
-          display: true,
-          text: "Snow Plow (Up/Down)",
-        },
-        ticks: {
-          stepSize: 1,
-        },
-      },
-      y2: {
-        type: "linear",
-        position: "right",
-        title: {
-          display: true,
-          text: "Speed (km/h)",
-        },
-        grid: {
-          drawOnChartArea: false,
-        },
-      },
-    },
-  };
+    const { data: vehicleData } = useSWR(
+        selectedState || selectedVehicle || selectedCustomer || selectedBrand
+            ? `/api/vehicle-summary?${selectedState ? `state=${selectedState}&` : ""}${selectedVehicle ? `vehicle_id=${selectedVehicle}&` : ""}${selectedCustomer ? `customer_id=${selectedCustomer}&` : ""}${selectedBrand ? `vehicle=${selectedBrand}` : ""}`
+            : "/api/vehicle-summary",
+        fetcher
+    );
 
-  return (
-    <div className="our-data-container">
-      <Sidebar />
-      <div className="main-content">
-        <div className="chart-box">
-          <h1 className="chart-title">Accessory</h1>
-          <div className="chart-area">
-            <Bar data={chartData} options={chartOptions} />
-          </div>
+    return (
+        <div className="our-data-container flex">
+            <Sidebar />
 
-          <div
-            className="info-box"
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-          >
-            {showTooltip && <div className="tooltip">Compares the operation status of the Snow Plow and the changes in vehicle speed over time simultaneously.</div>}
-          </div>
+            <div className="main-content p-6 flex-grow">
+                <h1 className="text-3xl font-bold mb-6 text-center">Our Data Dashboard</h1>
+
+
+                <div className="flex gap-4 mb-6">
+                    <select onChange={(e) => setSelectedState(e.target.value)} className="p-2 border rounded">
+                        <option value="">Select State</option>
+                        {usSummary?.map((state: any) => (
+                            <option key={state.state} value={state.state}>{state.state}</option>
+                        ))}
+                    </select>
+
+                    <select onChange={(e) => setSelectedVehicle(e.target.value)} className="p-2 border rounded">
+                        <option value="">Select Vehicle</option>
+                        {[...new Set(rides?.map((ride: any) => ride.vehicle_id))]?.map((vehicle) => (
+                            <option key={vehicle} value={vehicle}>{vehicle}</option>
+                        ))}
+                    </select>
+
+                    <select onChange={(e) => setSelectedCustomer(e.target.value)} className="p-2 border rounded">
+                        <option value="">Select Customer</option>
+                        {[...new Set(rides?.map((ride: any) => ride.customer_id))]?.map((customer) => (
+                            <option key={customer} value={customer}>{customer}</option>
+                        ))}
+                    </select>
+
+                    <select onChange={(e) => setSelectedBrand(e.target.value)} className="p-2 border rounded">
+                        <option value="">Select Brand</option>
+                        {[...new Set(vehicleData?.map((v: any) => v.brand))]?.map((brand) => (
+                            <option key={brand} value={brand}>{brand}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                        <tr className="bg-gray-200">
+                            <th className="border p-2">Ride ID</th>
+                            <th className="border p-2">State</th>
+                            <th className="border p-2">Vehicle ID</th>
+                            <th className="border p-2">Brand</th>
+                            <th className="border p-2">Customer ID</th>
+                            <th className="border p-2">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rides?.map((ride: any) => (
+                            <tr key={ride.ride_id} className="text-center border-t">
+                                <td className="border p-2">{ride.ride_id}</td>
+                                <td className="border p-2">{ride.state}</td>
+                                <td className="border p-2">{ride.vehicle_id}</td>
+                                <td className="border p-2">{ride.brand}</td>
+                                <td className="border p-2">{ride.customer_id}</td>
+                                <td className="border p-2">{new Date(ride.event_timestamp).toLocaleString()}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
