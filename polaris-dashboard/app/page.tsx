@@ -32,6 +32,8 @@ export default function Home() {
             <Sidebar className="w-[20%] h-full" />
 
             <div className="main-content flex w-full">
+                
+                {/* 지도 섹션 (왼쪽) */}
                 <div className="w-1/2 flex justify-center items-center transition-all duration-700">
                     <USDrillDownMap
                         usSummary={usSummary}
@@ -42,6 +44,7 @@ export default function Home() {
                     />
                 </div>
 
+                {/* 데이터 패널 (오른쪽) */}
                 <div
                     className={`w-1/2 p-6 transition-all duration-700 flex flex-col ${
                         showPanel ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full"

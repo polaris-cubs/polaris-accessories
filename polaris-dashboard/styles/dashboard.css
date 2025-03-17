@@ -31,4 +31,5 @@
     width: 35%;
     background-color: white;
     padding: 16px;
+    margin-left: auto !important;  /* 데이터를 오른쪽으로 이동 */
 }

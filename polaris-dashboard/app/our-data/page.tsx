@@ -2,8 +2,12 @@
 
 import React, { useState } from "react";
 import useSWR from "swr";
+import { Bar } from "react-chartjs-2";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions } from "chart.js";
 import Sidebar from "@/components/sidebar/sidebar";
 import "@/app/our-data/our-data.css"; 
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const fetcher = (url: string) => fetch(`http://localhost:8080${url}`).then((res) => res.json());
 
@@ -12,7 +16,6 @@ export default function OurData() {
     const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
     const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-
 
     const { data: usSummary } = useSWR("/api/us-summary", fetcher);
     const { data: rides } = useSWR(
@@ -29,13 +32,33 @@ export default function OurData() {
         fetcher
     );
 
+    // 📊 차트 옵션
+    const barOptions: ChartOptions<"bar"> = {
+        responsive: true,
+        plugins: {
+            legend: { position: "top" },
+            title: { display: true, text: "Vehicle Usage Summary" },
+        },
+    };
+
+    // 📊 차트 데이터 생성
+    const chartData = {
+        labels: vehicleData?.map((v: any) => v.brand) || [],
+        datasets: [
+            {
+                label: "Total Rides",
+                data: vehicleData?.map((v: any) => v.rides) || [],
+                backgroundColor: "rgba(54, 162, 235, 0.6)",
+            },
+        ],
+    };
+
     return (
         <div className="our-data-container flex">
             <Sidebar />
 
             <div className="main-content p-6 flex-grow">
                 <h1 className="text-3xl font-bold mb-6 text-center">Our Data Dashboard</h1>
-
 
                 <div className="flex gap-4 mb-6">
                     <select onChange={(e) => setSelectedState(e.target.value)} className="p-2 border rounded">
@@ -67,6 +90,7 @@ export default function OurData() {
                     </select>
                 </div>
 
+                {/* 📋 차량 테이블 */}
                 <table className="w-full border-collapse border border-gray-300">
                     <thead>
                         <tr className="bg-gray-200">
@@ -91,6 +115,17 @@ export default function OurData() {
                         ))}
                     </tbody>
                 </table>
+
+                {selectedState && selectedVehicle && selectedCustomer && selectedBrand && (
+                    <div className="mt-8 p-4 bg-white shadow-md rounded-lg">
+                        <h2 className="text-xl font-semibold mb-4">📊 Vehicle Usage Summary</h2>
+                        {vehicleData?.length ? (
+                            <Bar data={chartData} options={barOptions} />
+                        ) : (
+                            <p>No Data Available</p>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
