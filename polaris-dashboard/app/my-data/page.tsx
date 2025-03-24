@@ -2,11 +2,13 @@
 
 import React from "react";
 import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions } from "chart.js";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions, ArcElement } from "chart.js";
 import Sidebar from "@/components/sidebar/sidebar";
 import "@/app/my-data/my-data.css"; 
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+import { Doughnut } from "react-chartjs-2";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 const stateData = {
   labels: ["Drive", "RUN", "None", "2WD", "4WD"],
@@ -47,6 +49,13 @@ export default function MyData() {
         <div className="chart-section">
           <h1 className="text-3xl font-bold mb-6 text-center">Vehicle State Distribution</h1>
           <Bar data={stateData} options={barOptions} />
+        </div>
+
+        <div className="chart-section mt-10">
+          <h2 className="text-2xl font-semibold mb-4 text-center">
+            Vehicle State Proportions
+          </h2>
+          <Doughnut data={stateData} />
         </div>
       </div>
     </div>
