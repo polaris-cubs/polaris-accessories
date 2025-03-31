@@ -9,6 +9,8 @@ export default function MyDataPage() {
   const [username, setUsername] = useState("Amitesh"); 
   const [email, setEmail] = useState("amitesh@example.com"); 
   const [language, setLanguage] = useState("English");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const toggleDarkMode = () => {
     setDarkMode((prevMode) => !prevMode);
@@ -18,6 +20,17 @@ export default function MyDataPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     alert(`Username: ${username}, Email: ${email}, Language: ${language}`);
+  };
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword === confirmPassword) {
+      alert("Password changed successfully!");
+      setNewPassword("");
+      setConfirmPassword("");
+    } else {
+      alert("Passwords do not match. Please try again.");
+    }
   };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -67,6 +80,30 @@ export default function MyDataPage() {
           </label>
 
           <button type="submit" className="save-button">Save Changes</button>
+        </form>
+
+        {/* Password Change Section */}
+        <h2>Change Password</h2>
+        <form onSubmit={handlePasswordChange} className="form-container">
+          <label>
+            New Password:
+            <input 
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Confirm Password:
+            <input 
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </label>
+          <button type="submit" className="password-button">Change Password</button>
         </form>
       </div>
     </div>
