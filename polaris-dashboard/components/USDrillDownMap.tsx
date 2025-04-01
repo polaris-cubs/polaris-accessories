@@ -120,11 +120,9 @@ export default function USDrillDownMap({ usSummary, onStateSelect }) {
                                                         // </>
                                                         <>
                                                             {stateData.brand_averages.map((brandObj) => (
-                                                                <>
-                                                                    <div className="text-xs">
-                                                                        {brandObj.brand}: {brandObj.vehicles}
-                                                                    </div>
-                                                                </>
+                                                                <div key={brandObj.brand} className="text-xs">
+                                                                    {brandObj.brand}: {brandObj.vehicles}
+                                                                </div>
                                                             ))}
                                                         </>
                                                     )}
