@@ -1,27 +1,11 @@
 services:
-    postgres:
-        image: postgres:15
-        container_name: polaris-postgres
-        restart: always
-        environment:
-            POSTGRES_USER: polaris_user
-            POSTGRES_PASSWORD: polaris_password
-            POSTGRES_DB: polaris
-        ports:
-            - "5432:5432"
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
-            - ./polaris-backend/data/init.sql:/docker-entrypoint-initdb.d/init.sql
-
     backend:
         build: ./polaris-backend
         container_name: polaris-backend
         restart: always
-        depends_on:
-            - postgres
         environment:
             PORT: "8080"
-            DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris?sslmode=disable"
+            SQLITE_DB_PATH: "/app/data/polaris.db"
         ports:
             - "8080:8080"
         volumes:
@@ -38,17 +22,3 @@ services:
         volumes:
             - ./polaris-dashboard:/app
             - /app/node_modules
-
-    # data-loader:
-    #     build: ./polaris-backend/scripts
-    #     container_name: data-loader
-    #     depends_on:
-    #         - postgres
-    #     environment:
-    #         DATABASE_URL: "postgresql://polaris_user:polaris_password@postgres:5432/polaris?sslmode=disable"
-    #     volumes:
-    #         - ./polaris-backend/data/csv:/app/csv
-    #     restart: "no"
-
-volumes:
-    postgres_data:
