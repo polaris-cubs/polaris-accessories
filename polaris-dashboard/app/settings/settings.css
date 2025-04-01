@@ -1,11 +1,126 @@
+/* Ensure Sidebar doesn't overlap */
 .page-container {
-    display: flex;
-    height: 100vh;
+  display: flex;
+  height: 100vh;
 }
 
+/* Fix Content Layout */
 .content {
-    flex-grow: 1;
-    padding: 40px;
-    margin-left: 256px;
-    background-color: #f9f9f9;
+  flex-grow: 1;
+  padding: 40px;
+  margin-left: 256px;
+  background-color: var(--background-color, #f9f9f9);
+  color: var(--text-color, #000);
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* Dark Mode Styling */
+.dark-mode {
+  --background-color: #121212;
+  --text-color: #ffffff;
+}
+
+/* Form Container Centering */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 400px;
+  margin-top: 30px;
+  overflow: hidden;
+}
+
+/* Label and Input Styling */
+label {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+}
+
+input {
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+/* Adjust Buttons */
+.save-button, .toggle-button {
+  padding: 12px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  width: fit-content;
+}
+
+.save-button:hover {
+  background-color: #218838;
+}
+
+.toggle-button {
+  background-color: #007bff;
+}
+
+.toggle-button:hover {
+  background-color: #0056b3;
+}
+
+/* Fix Dark Mode Button Position */
+.toggle-button {
+  margin-bottom: 20px;
+}
+
+/* Language Selector Styling */
+.language-select {
+  margin-top: 5px;
+  padding: 10px;
+  width: 300px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: white;
+  font-size: 16px;
+  color: #000;
+}
+
+/* Add Focus Style */
+.language-select:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Adjust Form Layout */
+label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+/* Password Change Form */
+.password-button {
+  padding: 12px 20px;
+  background-color: #ffc107;
+  color: #000;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  width: fit-content;
+  margin-top: 10px;
+}
+
+.password-button:hover {
+  background-color: #e0a800;
+}
+
+/* Additional Input Focus Style */
+input[type="password"]:focus, input[type="text"]:focus, input[type="email"]:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
