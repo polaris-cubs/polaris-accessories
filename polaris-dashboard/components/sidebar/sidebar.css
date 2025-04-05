@@ -49,6 +49,12 @@
     color: #ffffff;
 }
 
+.nav a.active {
+    background-color: rgba(191, 219, 254, 0.5);
+    color: #ffffff;
+    font-weight: bold;
+}
+
 .nav hr {
     margin: 16px 0;
     border: none;
