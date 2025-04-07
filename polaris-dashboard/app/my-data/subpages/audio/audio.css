@@ -1,57 +1,58 @@
 .audio-container {
     display: flex;
     min-height: 100vh;
-}
-
-.main-content {
+  }
+  
+  .main-content {
     flex: 1;
     padding: 2rem;
     margin-left: 256px; /* Sidebar width */
-}
-
-.chart-section {
+  }
+  
+  .chart-section {
     background-color: white;
     padding: 2rem;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
-}
-
-.chart-card {
+  }
+  
+  .chart-card {
     background-color: white;
     padding: 1.5rem;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 1rem;
-}
-
-.data-summary {
+    min-height: 300px; /* ✅ Prevents shrinking loop */
+  }
+  
+  .data-summary {
     background-color: white;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.detailed-view {
+  }
+  
+  .detailed-view {
     margin-top: 2rem;
     padding-top: 2rem;
     border-top: 1px solid #e2e8f0;
-}
-
-.loading {
+  }
+  
+  .loading {
     text-align: center;
     padding: 2rem;
     font-size: 1.2rem;
     color: #666;
-}
-
-.error {
+  }
+  
+  .error {
     text-align: center;
     padding: 2rem;
     color: #dc2626;
     font-size: 1.2rem;
-}
-
-/* Add hover effect for clickable bars */
-.chart-section canvas {
+  }
+  
+  .chart-section canvas {
     cursor: pointer;
-} 
+  }
+  

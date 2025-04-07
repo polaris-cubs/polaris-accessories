@@ -23,6 +23,7 @@
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 1rem;
+    min-height: 300px; /* ✅ Prevent shrinking/flickering */
 }
 
 .data-summary {
@@ -54,4 +55,4 @@
 /* Add hover effect for clickable bars */
 .chart-section canvas {
     cursor: pointer;
-} 
+}

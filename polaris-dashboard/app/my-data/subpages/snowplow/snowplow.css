@@ -17,8 +17,17 @@
   margin-bottom: 2rem;
 }
 
+.chart-card {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  min-height: 300px; /* ✅ Prevents chart from shrinking on load */
+}
+
 .data-summary {
   background-color: white;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-} 
+}
