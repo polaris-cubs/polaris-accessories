@@ -55,7 +55,7 @@ export default function OurData() {
     // We'll keep all loaded rides in `allRides`.
     const [allRides, setAllRides] = useState<any[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(50); // or user picks
+    const [pageSize] = useState(10000); // or user picks
     const [totalCount, setTotalCount] = useState(0);
 
     // Client-side filter states
@@ -198,7 +198,7 @@ export default function OurData() {
             </Dropdown>
 
             {/* Vehicle Filter */}
-            <Dropdown>
+            {/* <Dropdown>
                 <DropdownTrigger>
                     <Button variant="flat" size="sm">
                         {selectedVehicle ?? "Filter by Vehicle"}
@@ -219,10 +219,10 @@ export default function OurData() {
                         <DropdownItem key={v}>{v}</DropdownItem>
                     ))}
                 </DropdownMenu>
-            </Dropdown>
+            </Dropdown> */}
 
             {/* Customer Filter */}
-            <Dropdown>
+            {/* <Dropdown>
                 <DropdownTrigger>
                     <Button variant="flat" size="sm">
                         {selectedCustomer ?? "Filter by Customer"}
@@ -243,7 +243,7 @@ export default function OurData() {
                         <DropdownItem key={c}>{c}</DropdownItem>
                     ))}
                 </DropdownMenu>
-            </Dropdown>
+            </Dropdown> */}
 
             {/* Brand Filter */}
             <Dropdown>
@@ -345,7 +345,7 @@ export default function OurData() {
                 {filteredRides.length > 0 && (
                     <Card className="mt-8">
                         <CardBody>
-                            <h2 className="text-xl font-semibold mb-4">📊 Local Filtered Brand Usage</h2>
+                            <h2 className="text-xl font-semibold mb-4">Brand Usage</h2>
                             <Bar data={chartData} options={chartOptions} />
                         </CardBody>
                     </Card>

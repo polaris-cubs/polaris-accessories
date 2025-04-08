@@ -191,7 +191,7 @@ func getRideDetails(w http.ResponseWriter, r *http.Request) {
     pageSizeStr := r.URL.Query().Get("page_size")
 
     page := 1
-    pageSize := 50
+    pageSize := 10000
 
     if pageStr != "" {
         if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
