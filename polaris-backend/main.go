@@ -63,75 +63,75 @@ func getUsSummary(w http.ResponseWriter, r *http.Request) {
     // No filters. Always show everything.
 
     query := `
-WITH all_states(state) AS (
-  VALUES
-    ('Alabama'),('Alaska'),('Arizona'),('Arkansas'),('California'),('Colorado'),
-    ('Connecticut'),('Delaware'),('District of Columbia'),('Florida'),('Georgia'),
-    ('Hawaii'),('Idaho'),('Illinois'),('Indiana'),('Iowa'),('Kansas'),('Kentucky'),
-    ('Louisiana'),('Maine'),('Maryland'),('Massachusetts'),('Michigan'),('Minnesota'),
-    ('Mississippi'),('Missouri'),('Montana'),('Nebraska'),('Nevada'),('New Hampshire'),
-    ('New Jersey'),('New Mexico'),('New York'),('North Carolina'),('North Dakota'),
-    ('Ohio'),('Oklahoma'),('Oregon'),('Pennsylvania'),('Rhode Island'),('South Carolina'),
-    ('South Dakota'),('Tennessee'),('Texas'),('Utah'),('Vermont'),('Virginia'),
-    ('Washington'),('West Virginia'),('Wisconsin'),('Wyoming')
-),
-all_brands AS (
-  SELECT DISTINCT brand FROM dim_vehicle ORDER BY brand
-),
-rideAgg AS (
-  SELECT c.state AS st,
-         COUNT(*) AS rides,
-         COUNT(DISTINCT r.vehicle_id) AS vehicles,
-         COUNT(DISTINCT r.customer_id) AS customers
-  FROM fact_vehicle_ride r
-  JOIN dim_customer c ON r.customer_id = c.customer_id
-  GROUP BY c.state
-),
-brandAgg AS (
-  SELECT c.state AS st,
-         v.brand,
-         COUNT(*) AS rides,
-         COUNT(DISTINCT r.vehicle_id) AS vehicles
-  FROM fact_vehicle_ride r
-  JOIN dim_customer c ON r.customer_id = c.customer_id
-  JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
-  GROUP BY c.state, v.brand
-),
-brandData AS (
-  SELECT s.state,
-         json_group_array(
-           json_object(
-             'brand',    ab.brand,
-             'rides',    coalesce(ba.rides, 0),
-             'vehicles', coalesce(ba.vehicles, 0),
-             'avg_rides',
-               CASE WHEN coalesce(ba.vehicles, 0)=0
-                    THEN 0
-                    ELSE round(cast(ba.rides as real) / ba.vehicles, 2)
-               END
-           )
-         ) AS brand_averages
-  FROM all_states s
-  CROSS JOIN all_brands ab
-  LEFT JOIN brandAgg ba
-    ON s.state = ba.st AND ab.brand = ba.brand
-  GROUP BY s.state
-)
-SELECT
-  a.state,
-  coalesce(r.rides, 0) AS rides,
-  coalesce(r.vehicles, 0) AS vehicles,
-  coalesce(r.customers, 0) AS customers,
-  CASE WHEN coalesce(r.vehicles,0)=0
-       THEN 0
-       ELSE round(cast(r.rides as real)/ r.vehicles, 2)
-  END AS avg_rides_per_vehicle,
-  coalesce(b.brand_averages, '[]') AS brand_averages
-FROM all_states a
-LEFT JOIN rideAgg r ON a.state = r.st
-LEFT JOIN brandData b ON a.state = b.state
-ORDER BY a.state;
-`
+			WITH all_states(state) AS (
+			VALUES
+				('Alabama'),('Alaska'),('Arizona'),('Arkansas'),('California'),('Colorado'),
+				('Connecticut'),('Delaware'),('District of Columbia'),('Florida'),('Georgia'),
+				('Hawaii'),('Idaho'),('Illinois'),('Indiana'),('Iowa'),('Kansas'),('Kentucky'),
+				('Louisiana'),('Maine'),('Maryland'),('Massachusetts'),('Michigan'),('Minnesota'),
+				('Mississippi'),('Missouri'),('Montana'),('Nebraska'),('Nevada'),('New Hampshire'),
+				('New Jersey'),('New Mexico'),('New York'),('North Carolina'),('North Dakota'),
+				('Ohio'),('Oklahoma'),('Oregon'),('Pennsylvania'),('Rhode Island'),('South Carolina'),
+				('South Dakota'),('Tennessee'),('Texas'),('Utah'),('Vermont'),('Virginia'),
+				('Washington'),('West Virginia'),('Wisconsin'),('Wyoming')
+			),
+			all_brands AS (
+			SELECT DISTINCT brand FROM dim_vehicle ORDER BY brand
+			),
+			rideAgg AS (
+			SELECT c.state AS st,
+					COUNT(*) AS rides,
+					COUNT(DISTINCT r.vehicle_id) AS vehicles,
+					COUNT(DISTINCT r.customer_id) AS customers
+			FROM fact_vehicle_ride r
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			GROUP BY c.state
+			),
+			brandAgg AS (
+			SELECT c.state AS st,
+					v.brand,
+					COUNT(*) AS rides,
+					COUNT(DISTINCT r.vehicle_id) AS vehicles
+			FROM fact_vehicle_ride r
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+			GROUP BY c.state, v.brand
+			),
+			brandData AS (
+			SELECT s.state,
+					json_group_array(
+					json_object(
+						'brand',    ab.brand,
+						'rides',    coalesce(ba.rides, 0),
+						'vehicles', coalesce(ba.vehicles, 0),
+						'avg_rides',
+						CASE WHEN coalesce(ba.vehicles, 0)=0
+								THEN 0
+								ELSE round(cast(ba.rides as real) / ba.vehicles, 2)
+						END
+					)
+					) AS brand_averages
+			FROM all_states s
+			CROSS JOIN all_brands ab
+			LEFT JOIN brandAgg ba
+				ON s.state = ba.st AND ab.brand = ba.brand
+			GROUP BY s.state
+			)
+			SELECT
+			a.state,
+			coalesce(r.rides, 0) AS rides,
+			coalesce(r.vehicles, 0) AS vehicles,
+			coalesce(r.customers, 0) AS customers,
+			CASE WHEN coalesce(r.vehicles,0)=0
+				THEN 0
+				ELSE round(cast(r.rides as real)/ r.vehicles, 2)
+			END AS avg_rides_per_vehicle,
+			coalesce(b.brand_averages, '[]') AS brand_averages
+			FROM all_states a
+			LEFT JOIN rideAgg r ON a.state = r.st
+			LEFT JOIN brandData b ON a.state = b.state
+			ORDER BY a.state;
+			`
 
     rows, err := db.Query(query)
     if err != nil {
@@ -179,10 +179,6 @@ ORDER BY a.state;
     json.NewEncoder(w).Encode(results)
 }
 
-// -----------------------------------------------------------------------------
-// Ride Details (unchanged from your snippet – references fact_vehicle_ride only)
-// -----------------------------------------------------------------------------
-
 func getRideDetails(w http.ResponseWriter, r *http.Request) {
     // 1) Parse optional filters
     state := r.URL.Query().Get("state")
@@ -209,46 +205,70 @@ func getRideDetails(w http.ResponseWriter, r *http.Request) {
     }
     offset := (page - 1) * pageSize
 
-    // 3) Build the base query + filters
-    query := `
-SELECT r.ride_id, r.event_timestamp, c.state, v.brand, r.customer_id, r.vehicle_id
-FROM fact_vehicle_ride r
-JOIN dim_customer c ON r.customer_id = c.customer_id
-JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
-WHERE 1=1
-`
+    // Build base WHERE clause + parameters for both queries
+    baseWhere := "WHERE 1=1"
     var params []interface{}
 
     if state != "" {
-        query += " AND c.state = ?"
+        baseWhere += " AND c.state = ?"
         params = append(params, state)
     }
     if vehicleID != "" {
-        query += " AND r.vehicle_id = ?"
+        baseWhere += " AND r.vehicle_id = ?"
         params = append(params, vehicleID)
     }
     if customerID != "" {
-        query += " AND r.customer_id = ?"
+        baseWhere += " AND r.customer_id = ?"
         params = append(params, customerID)
     }
     if vehicle != "" {
-        query += " AND v.brand = ?"
+        baseWhere += " AND v.brand = ?"
         params = append(params, vehicle)
     }
 
-    // 4) Add ORDER BY, LIMIT, OFFSET
-    query += " ORDER BY r.event_timestamp DESC LIMIT ? OFFSET ?"
-    params = append(params, pageSize, offset)
+    // 3) Count query (to get total rows)
+    countQuery := `
+        SELECT COUNT(*) 
+        FROM fact_vehicle_ride r
+        JOIN dim_customer c ON r.customer_id = c.customer_id
+        JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+    ` + baseWhere
 
-    // 5) Execute
-    rows, err := db.Query(query, params...)
+    var totalCount int
+    if err := db.QueryRow(countQuery, params...).Scan(&totalCount); err != nil {
+        http.Error(w, "Count query error: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    // 4) Data query (with ORDER BY, LIMIT, OFFSET)
+    dataQuery := `
+        SELECT 
+            r.ride_id, 
+            r.event_timestamp, 
+            c.state, 
+            v.brand, 
+            r.customer_id, 
+            r.vehicle_id
+        FROM fact_vehicle_ride r
+        JOIN dim_customer c ON r.customer_id = c.customer_id
+        JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+    ` + baseWhere + `
+        ORDER BY r.event_timestamp DESC
+        LIMIT ? OFFSET ?
+    `
+
+    // Extend params for limit & offset
+    dataParams := append([]interface{}{}, params...)
+    dataParams = append(dataParams, pageSize, offset)
+
+    rows, err := db.Query(dataQuery, dataParams...)
     if err != nil {
         http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
         return
     }
     defer rows.Close()
 
-    // 6) Scan rows
+    // 5) Scan rows into struct
     type RideDetail struct {
         RideID         int64  `json:"ride_id"`
         EventTimestamp string `json:"event_timestamp"`
@@ -261,16 +281,28 @@ WHERE 1=1
 
     for rows.Next() {
         var rd RideDetail
-        if err := rows.Scan(&rd.RideID, &rd.EventTimestamp, &rd.State, &rd.Brand,
-            &rd.CustomerID, &rd.VehicleID); err != nil {
+        if err := rows.Scan(&rd.RideID, &rd.EventTimestamp, &rd.State, &rd.Brand, &rd.CustomerID, &rd.VehicleID); err != nil {
             http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
             return
         }
         details = append(details, rd)
     }
 
+    // 6) Construct final JSON response
+    resp := struct {
+        Rows       []RideDetail `json:"Rows"`
+        TotalCount int          `json:"TotalCount"`
+        Page       int          `json:"Page"`
+        PageSize   int          `json:"PageSize"`
+    }{
+        Rows:       details,
+        TotalCount: totalCount,
+        Page:       page,
+        PageSize:   pageSize,
+    }
+
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(details)
+    json.NewEncoder(w).Encode(resp)
 }
 
 // -----------------------------------------------------------------------------
@@ -286,19 +318,19 @@ func getAccessorySummary(w http.ResponseWriter, r *http.Request) {
     // We'll parse each row's "property_values" JSON array
     // using "json_each()" on fact_vehicle_ride.
     query := `
-SELECT c.state,
-       p.property_name,
-       COUNT(*) AS usage_count
-FROM fact_vehicle_ride r
-JOIN dim_customer c ON r.customer_id = c.customer_id
-JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
--- This is how we "unpack" the JSON array stored in r.property_values
-JOIN json_each(r.property_values) j
--- Then we link the JSON "id" to dim_property.property_id
-JOIN dim_property p
-  ON p.property_id = CAST(json_extract(j.value, '$.id') AS INTEGER)
-WHERE 1=1
-`
+			SELECT c.state,
+				p.property_name,
+				COUNT(*) AS usage_count
+			FROM fact_vehicle_ride r
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+			-- This is how we "unpack" the JSON array stored in r.property_values
+			JOIN json_each(r.property_values) j
+			-- Then we link the JSON "id" to dim_property.property_id
+			JOIN dim_property p
+			ON p.property_id = CAST(json_extract(j.value, '$.id') AS INTEGER)
+			WHERE 1=1
+			`
     var params []interface{}
 
     if state != "" {
@@ -359,12 +391,12 @@ func getVehicleSummary(w http.ResponseWriter, r *http.Request) {
     vehicle := r.URL.Query().Get("vehicle")
 
     query := `
-SELECT v.brand, COUNT(r.ride_id) AS rides, COUNT(DISTINCT r.vehicle_id) AS vehicles
-FROM fact_vehicle_ride r
-JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
-JOIN dim_customer c ON r.customer_id = c.customer_id
-WHERE 1=1
-`
+			SELECT v.brand, COUNT(r.ride_id) AS rides, COUNT(DISTINCT r.vehicle_id) AS vehicles
+			FROM fact_vehicle_ride r
+			JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			WHERE 1=1
+			`
     var params []interface{}
 
     if state != "" {
@@ -423,12 +455,12 @@ func getTimeSeries(w http.ResponseWriter, r *http.Request) {
     vehicle := r.URL.Query().Get("vehicle")
 
     query := `
-SELECT DATE(r.event_timestamp) AS ride_date, COUNT(*) AS rides
-FROM fact_vehicle_ride r
-JOIN dim_customer c ON r.customer_id = c.customer_id
-JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
-WHERE 1=1
-`
+			SELECT DATE(r.event_timestamp) AS ride_date, COUNT(*) AS rides
+			FROM fact_vehicle_ride r
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+			WHERE 1=1
+			`
     var params []interface{}
 
     if state != "" {
@@ -491,17 +523,17 @@ func getStateDetail(w http.ResponseWriter, r *http.Request) {
     vehicle := r.URL.Query().Get("vehicle")
 
     query := `
-SELECT c.state,
-       p.property_name,
-       COUNT(*) AS usage_count
-FROM fact_vehicle_ride r
-JOIN dim_customer c ON r.customer_id = c.customer_id
-JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
-JOIN json_each(r.property_values) j
-JOIN dim_property p
-  ON p.property_id = CAST(json_extract(j.value, '$.id') AS INTEGER)
-WHERE c.state = ?
-`
+			SELECT c.state,
+				p.property_name,
+				COUNT(*) AS usage_count
+			FROM fact_vehicle_ride r
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+			JOIN json_each(r.property_values) j
+			JOIN dim_property p
+			ON p.property_id = CAST(json_extract(j.value, '$.id') AS INTEGER)
+			WHERE c.state = ?
+			`
     params := []interface{}{state}
 
     if vehicleID != "" {
@@ -652,15 +684,15 @@ func getSnowplowUsagePerRide(w http.ResponseWriter, r *http.Request) {
     // We look for: property_id=6 and lower(value)='down'
     // in the JSON array stored in r.property_values
     query := `
-SELECT DATE(r.event_timestamp) AS ride_date,
-       COUNT(DISTINCT r.ride_id) AS uses
-FROM fact_vehicle_ride r
-JOIN json_each(r.property_values) j
-JOIN dim_customer c ON r.customer_id = c.customer_id
-JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
-WHERE CAST(json_extract(j.value, '$.id') AS INTEGER) = 6
-  AND LOWER(json_extract(j.value, '$.value')) = 'down'
-`
+			SELECT DATE(r.event_timestamp) AS ride_date,
+				COUNT(DISTINCT r.ride_id) AS uses
+			FROM fact_vehicle_ride r
+			JOIN json_each(r.property_values) j
+			JOIN dim_customer c ON r.customer_id = c.customer_id
+			JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+			WHERE CAST(json_extract(j.value, '$.id') AS INTEGER) = 6
+			AND LOWER(json_extract(j.value, '$.value')) = 'down'
+			`
     var params []interface{}
 
     if state != "" {
