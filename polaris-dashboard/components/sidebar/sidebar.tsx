@@ -14,6 +14,7 @@ export default function Sidebar() {
         <a href="/">Home</a>
         <a href="/my-data">My Data</a>
         <a href="/our-data">Our Data</a>
+        <a href="/snowplows">Snowplows</a>
         <a href="/settings">Settings</a>
         <hr />
       </nav>

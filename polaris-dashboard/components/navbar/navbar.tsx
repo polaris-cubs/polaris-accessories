@@ -53,6 +53,9 @@ export const Navbar = () => {
                         <NextLink href="/our-data" className="nav-link">Our Data</NextLink>
                     </NavbarItem>
                     <NavbarItem>
+                        <NextLink href="/snowplows" className="nav-link">Snowplows</NextLink>
+                    </NavbarItem>
+                    <NavbarItem>
                         <NextLink href="/settings" className="nav-link">Settings</NextLink>
                     </NavbarItem>
                 </ul>
@@ -70,6 +73,9 @@ export const Navbar = () => {
                     </NavbarMenuItem>
                     <NavbarMenuItem>
                         <NextLink href="/our-data" className="nav-link">Our Data</NextLink>
+                    </NavbarMenuItem>
+                    <NavbarMenuItem>
+                        <NextLink href="/snowplows" className="nav-link">Snowplows</NextLink>
                     </NavbarMenuItem>
                     <NavbarMenuItem>
                         <NextLink href="/settings" className="nav-link">Settings</NextLink>
