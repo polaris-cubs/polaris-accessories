@@ -1,3 +1,5 @@
+// Full version with layout fixes, line chart by vehicle, and summary card added
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -18,10 +20,21 @@ import {
     Button,
 } from "@heroui/react";
 
-import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions } from "chart.js";
+import { Bar, Line } from "react-chartjs-2";
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    Title,
+    Tooltip,
+    Legend,
+    ChartOptions,
+} from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 const fetcher = async (page: number, pageSize: number) => {
     const params = new URLSearchParams({
@@ -32,7 +45,6 @@ const fetcher = async (page: number, pageSize: number) => {
     return res.json();
 };
 
-// We'll define a shape for the server response
 interface RidesResponse {
     Rows: any[];
     TotalCount: number;
@@ -40,7 +52,6 @@ interface RidesResponse {
     PageSize: number;
 }
 
-// Table columns
 const columns = [
     { name: "Ride ID", uid: "ride_id" },
     { name: "State", uid: "state" },
@@ -51,56 +62,36 @@ const columns = [
 ];
 
 export default function OurData() {
-    // --------------- Local States ---------------
-    // We'll keep all loaded rides in `allRides`.
     const [allRides, setAllRides] = useState<any[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(10000); // or user picks
+    const [pageSize] = useState(10000);
     const [totalCount, setTotalCount] = useState(0);
 
-    // Client-side filter states
     const [selectedState, setSelectedState] = useState<string | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
     const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
-    // --------------- Phase 1: Load data in pages ---------------
-    // We'll do a "Load More" approach.
-    // As soon as the user hits the page, we fetch the first page.
     useEffect(() => {
         loadPage(currentPage);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage]);
 
     async function loadPage(page: number) {
         const data: RidesResponse = await fetcher(page, pageSize);
-        // Append new Rows to allRides
         setAllRides((prev) => [...prev, ...data.Rows]);
         setTotalCount(data.TotalCount);
     }
 
-    // If you'd prefer infinite scroll, you'd detect user scroll position
-    // and call `setCurrentPage(old => old + 1)` automatically.
-
-    // --------------- Phase 2: Client-Side Filtering ---------------
-    // We apply filters to `allRides`
     const filteredRides = useMemo(() => {
         return allRides.filter((ride) => {
-            // State filter
             if (selectedState && ride.state !== selectedState) return false;
-            // Vehicle filter
             if (selectedVehicle && ride.vehicle_id !== selectedVehicle) return false;
-            // Customer filter
             if (selectedCustomer && ride.customer_id !== selectedCustomer) return false;
-            // Brand filter
             if (selectedBrand && ride.brand !== selectedBrand) return false;
             return true;
         });
     }, [allRides, selectedState, selectedVehicle, selectedCustomer, selectedBrand]);
 
-    // --------------- Local Pagination for the filtered results ---------------
-    // We might do a simple table pagination inside HeroUI.
-    // Or we can do infinite scroll. Let's do a local "page" for the table too.
     const [localPage, setLocalPage] = useState(1);
     const [localRowsPerPage, setLocalRowsPerPage] = useState(10);
 
@@ -111,9 +102,6 @@ export default function OurData() {
         return filteredRides.slice(startIndex, startIndex + localRowsPerPage);
     }, [filteredRides, startIndex, localRowsPerPage]);
 
-    // --------------- Chart (client-side) ---------------
-    // Suppose we want a brand usage chart from the filtered rides
-    // We'll group them by brand:
     const brandCounts = useMemo(() => {
         const counts: Record<string, number> = {};
         for (const r of filteredRides) {
@@ -139,41 +127,59 @@ export default function OurData() {
         ],
     };
 
-    // --------------- Render Cell Helper ---------------
+    const ridesPerVehicle = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const r of filteredRides) {
+            counts[r.vehicle_id] = (counts[r.vehicle_id] || 0) + 1;
+        }
+        return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)).map(([vehicle, count]) => ({ vehicle, count }));
+    }, [filteredRides]);
+
+    const lineChartData = {
+        labels: ridesPerVehicle.map((d) => d.vehicle),
+        datasets: [
+            {
+                label: "Rides per Vehicle",
+                data: ridesPerVehicle.map((d) => d.count),
+                borderColor: "rgb(75, 192, 192)",
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                fill: true,
+                tension: 0.4,
+            },
+        ],
+    };
+
+    const lineChartOptions: ChartOptions<"line"> = {
+        responsive: true,
+        plugins: {
+            legend: { position: "top" },
+            title: { display: true, text: "Ride Count per Vehicle (Client-Side Filtered)" },
+        },
+    };
+
     function renderCell(ride: any, columnKey: React.Key) {
         switch (columnKey) {
-            case "ride_id":
-                return ride.ride_id;
-            case "state":
-                return ride.state;
-            case "vehicle_id":
-                return ride.vehicle_id;
-            case "brand":
-                return ride.brand;
-            case "customer_id":
-                return ride.customer_id;
-            case "event_timestamp":
-                return new Date(ride.event_timestamp).toLocaleString();
-            default:
-                return null;
+            case "ride_id": return ride.ride_id;
+            case "state": return ride.state;
+            case "vehicle_id": return ride.vehicle_id;
+            case "brand": return ride.brand;
+            case "customer_id": return ride.customer_id;
+            case "event_timestamp": return new Date(ride.event_timestamp).toLocaleString();
+            default: return null;
         }
     }
 
-    // --------------- Single Selection Helper for HeroUI <Dropdown> ---------------
     function singleSelection(value: string | null) {
         return value ? new Set([value]) : new Set([""]);
     }
 
-    // We can glean the distinct states, vehicles, etc. from `allRides` if we want client-only:
     const distinctStates = Array.from(new Set(allRides.map((r) => r.state)));
     const distinctVehicles = Array.from(new Set(allRides.map((r) => r.vehicle_id)));
     const distinctCustomers = Array.from(new Set(allRides.map((r) => r.customer_id)));
     const distinctBrands = Array.from(new Set(allRides.map((r) => r.brand)));
 
-    // --------------- HeroUI top content: filters ---------------
     const topContent = (
         <div className="flex flex-wrap gap-2 w-full">
-            {/* State Filter */}
             <Dropdown>
                 <DropdownTrigger>
                     <Button variant="flat" size="sm">
@@ -197,8 +203,7 @@ export default function OurData() {
                 </DropdownMenu>
             </Dropdown>
 
-            {/* Vehicle Filter */}
-            {/* <Dropdown>
+            <Dropdown>
                 <DropdownTrigger>
                     <Button variant="flat" size="sm">
                         {selectedVehicle ?? "Filter by Vehicle"}
@@ -219,10 +224,9 @@ export default function OurData() {
                         <DropdownItem key={v}>{v}</DropdownItem>
                     ))}
                 </DropdownMenu>
-            </Dropdown> */}
+            </Dropdown>
 
-            {/* Customer Filter */}
-            {/* <Dropdown>
+            <Dropdown>
                 <DropdownTrigger>
                     <Button variant="flat" size="sm">
                         {selectedCustomer ?? "Filter by Customer"}
@@ -243,9 +247,8 @@ export default function OurData() {
                         <DropdownItem key={c}>{c}</DropdownItem>
                     ))}
                 </DropdownMenu>
-            </Dropdown> */}
+            </Dropdown>
 
-            {/* Brand Filter */}
             <Dropdown>
                 <DropdownTrigger>
                     <Button variant="flat" size="sm">
@@ -271,7 +274,6 @@ export default function OurData() {
         </div>
     );
 
-    // --------------- Local pagination bottom content ---------------
     const bottomContent = (
         <div className="flex justify-between items-center w-full py-2 mt-2">
             <div className="flex items-center gap-2">
@@ -294,21 +296,15 @@ export default function OurData() {
         </div>
     );
 
-    // --------------- "Load More" button logic ---------------
-    // If we haven't loaded all pages from the server yet, let user load more.
     const totalServerPages = Math.ceil(totalCount / pageSize);
     const canLoadMore = currentPage < totalServerPages;
 
-    // --------------- Render ---------------
     return (
         <div className="our-data-container flex">
-            {/* Your sidebar */}
-            {/* <Sidebar /> */}
-            <div className="main-content p-6 flex-grow">
+            <div className="main-content p-6 flex-grow flex flex-col items-start">
                 <h1 className="text-3xl font-bold mb-6 text-center">Our Data Dashboard</h1>
 
-                {/* Remote Pagination UI */}
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 w-full">
                     <div className="text-sm text-gray-600">
                         Fetched {allRides.length} / {totalCount} total rides
                     </div>
@@ -320,7 +316,7 @@ export default function OurData() {
                 </div>
 
                 {/* Table with local filtering + local pagination */}
-                <Card>
+                <Card className="w-full">
                     <CardBody>
                         <Table
                             aria-label="All Rides (Client-Side Filtered)"
@@ -341,14 +337,35 @@ export default function OurData() {
                     </CardBody>
                 </Card>
 
-                {/* Example chart (from local filtered data) */}
+                {/* Summary card */}
+                <Card className="w-full max-w-4xl mt-8">
+                    <CardBody>
+                        <div className="text-lg font-medium">
+                            Total Filtered Rides: {filteredRides.length}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                            Showing page {localPage} of {totalLocalPages}
+                        </div>
+                    </CardBody>
+                </Card>
+
+                {/* Chart section */}
                 {filteredRides.length > 0 && (
-                    <Card className="mt-8">
-                        <CardBody>
-                            <h2 className="text-xl font-semibold mb-4">Brand Usage</h2>
-                            <Bar data={chartData} options={chartOptions} />
-                        </CardBody>
-                    </Card>
+                    <div className="charts-container mt-8">
+                        <div className="chart-box">
+                            <h2 className="chart-title">Brand Usage</h2>
+                            <div className="chart-area">
+                                <Bar data={chartData} options={chartOptions} />
+                            </div>
+                        </div>
+
+                        <div className="chart-box">
+                            <h2 className="chart-title">Rides per Vehicle</h2>
+                            <div className="chart-area">
+                                <Line data={lineChartData} options={lineChartOptions} />
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
