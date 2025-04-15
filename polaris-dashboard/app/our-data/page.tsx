@@ -1,6 +1,5 @@
-// Full version with layout fixes, line chart by vehicle, and summary card added
-
 "use client";
+import "@/app/our-data/our-data.css";
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -19,7 +18,6 @@ import {
     DropdownItem,
     Button,
 } from "@heroui/react";
-
 import { Bar, Line } from "react-chartjs-2";
 import {
     Chart as ChartJS,
@@ -32,17 +30,46 @@ import {
     Tooltip,
     Legend,
     ChartOptions,
+    Filler,
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
+import Sidebar from "@/components/sidebar/sidebar";
+
+// Register Chart.js components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+);
+
+// Configure default chart options
+ChartJS.defaults.font.family = "'Inter', sans-serif";
+ChartJS.defaults.responsive = true;
+ChartJS.defaults.maintainAspectRatio = false;
 
 const fetcher = async (page: number, pageSize: number) => {
-    const params = new URLSearchParams({
-        page: String(page),
-        page_size: String(pageSize),
-    });
-    const res = await fetch(`http://localhost:8080/api/rides?${params.toString()}`);
-    return res.json();
+    try {
+        const params = new URLSearchParams({
+            page: String(page),
+            page_size: String(pageSize),
+        });
+        const res = await fetch(`http://localhost:8080/api/rides?${params.toString()}`);
+
+        if (!res.ok) {
+            throw new Error('Failed to fetch data');
+        }
+
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
 };
 
 interface RidesResponse {
@@ -78,6 +105,7 @@ export default function OurData() {
 
     async function loadPage(page: number) {
         const data: RidesResponse = await fetcher(page, pageSize);
+
         setAllRides((prev) => [...prev, ...data.Rows]);
         setTotalCount(data.TotalCount);
     }
@@ -88,6 +116,7 @@ export default function OurData() {
             if (selectedVehicle && ride.vehicle_id !== selectedVehicle) return false;
             if (selectedCustomer && ride.customer_id !== selectedCustomer) return false;
             if (selectedBrand && ride.brand !== selectedBrand) return false;
+
             return true;
         });
     }, [allRides, selectedState, selectedVehicle, selectedCustomer, selectedBrand]);
@@ -104,9 +133,11 @@ export default function OurData() {
 
     const brandCounts = useMemo(() => {
         const counts: Record<string, number> = {};
+
         for (const r of filteredRides) {
             counts[r.brand] = (counts[r.brand] || 0) + 1;
         }
+
         return Object.entries(counts).map(([brand, cnt]) => ({ brand, rides: cnt }));
     }, [filteredRides]);
 
@@ -129,9 +160,11 @@ export default function OurData() {
 
     const ridesPerVehicle = useMemo(() => {
         const counts: Record<string, number> = {};
+
         for (const r of filteredRides) {
             counts[r.vehicle_id] = (counts[r.vehicle_id] || 0) + 1;
         }
+
         return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)).map(([vehicle, count]) => ({ vehicle, count }));
     }, [filteredRides]);
 
@@ -159,18 +192,18 @@ export default function OurData() {
 
     function renderCell(ride: any, columnKey: React.Key) {
         switch (columnKey) {
-            case "ride_id": return ride.ride_id;
-            case "state": return ride.state;
-            case "vehicle_id": return ride.vehicle_id;
-            case "brand": return ride.brand;
-            case "customer_id": return ride.customer_id;
-            case "event_timestamp": return new Date(ride.event_timestamp).toLocaleString();
-            default: return null;
+        case "ride_id": return ride.ride_id;
+        case "state": return ride.state;
+        case "vehicle_id": return ride.vehicle_id;
+        case "brand": return ride.brand;
+        case "customer_id": return ride.customer_id;
+        case "event_timestamp": return new Date(ride.event_timestamp).toLocaleString();
+        default: return null;
         }
     }
 
-    function singleSelection(value: string | null) {
-        return value ? new Set([value]) : new Set([""]);
+    function singleSelection(value: string | null): Set<string> {
+        return new Set([value || ""]);
     }
 
     const distinctStates = Array.from(new Set(allRides.map((r) => r.state)));
@@ -182,16 +215,17 @@ export default function OurData() {
         <div className="flex flex-wrap gap-2 w-full">
             <Dropdown>
                 <DropdownTrigger>
-                    <Button variant="flat" size="sm">
+                    <Button size="sm" variant="flat">
                         {selectedState ?? "Filter by State"}
                     </Button>
                 </DropdownTrigger>
                 <DropdownMenu
                     aria-label="Select State"
-                    selectionMode="single"
                     selectedKeys={singleSelection(selectedState)}
-                    onSelectionChange={(keys) => {
-                        const val = keys.values().next().value;
+                    selectionMode="single"
+                    onSelectionChange={(keys: Set<string>) => {
+                        const val = Array.from(keys)[0];
+
                         setSelectedState(val === "" ? null : val);
                         setLocalPage(1);
                     }}
@@ -205,16 +239,17 @@ export default function OurData() {
 
             <Dropdown>
                 <DropdownTrigger>
-                    <Button variant="flat" size="sm">
+                    <Button size="sm" variant="flat">
                         {selectedVehicle ?? "Filter by Vehicle"}
                     </Button>
                 </DropdownTrigger>
                 <DropdownMenu
                     aria-label="Select Vehicle"
-                    selectionMode="single"
                     selectedKeys={singleSelection(selectedVehicle)}
-                    onSelectionChange={(keys) => {
-                        const val = keys.values().next().value;
+                    selectionMode="single"
+                    onSelectionChange={(keys: Set<string>) => {
+                        const val = Array.from(keys)[0];
+
                         setSelectedVehicle(val === "" ? null : val);
                         setLocalPage(1);
                     }}
@@ -228,16 +263,17 @@ export default function OurData() {
 
             <Dropdown>
                 <DropdownTrigger>
-                    <Button variant="flat" size="sm">
+                    <Button size="sm" variant="flat">
                         {selectedCustomer ?? "Filter by Customer"}
                     </Button>
                 </DropdownTrigger>
                 <DropdownMenu
                     aria-label="Select Customer"
-                    selectionMode="single"
                     selectedKeys={singleSelection(selectedCustomer)}
-                    onSelectionChange={(keys) => {
-                        const val = keys.values().next().value;
+                    selectionMode="single"
+                    onSelectionChange={(keys: Set<string>) => {
+                        const val = Array.from(keys)[0];
+
                         setSelectedCustomer(val === "" ? null : val);
                         setLocalPage(1);
                     }}
@@ -251,16 +287,17 @@ export default function OurData() {
 
             <Dropdown>
                 <DropdownTrigger>
-                    <Button variant="flat" size="sm">
+                    <Button size="sm" variant="flat">
                         {selectedBrand ?? "Filter by Brand"}
                     </Button>
                 </DropdownTrigger>
                 <DropdownMenu
                     aria-label="Select Brand"
-                    selectionMode="single"
                     selectedKeys={singleSelection(selectedBrand)}
-                    onSelectionChange={(keys) => {
-                        const val = keys.values().next().value;
+                    selectionMode="single"
+                    onSelectionChange={(keys: Set<string>) => {
+                        const val = Array.from(keys)[0];
+
                         setSelectedBrand(val === "" ? null : val);
                         setLocalPage(1);
                     }}
@@ -292,7 +329,7 @@ export default function OurData() {
                     <option value="20">20</option>
                 </select>
             </div>
-            <Pagination page={localPage} total={totalLocalPages} showControls onChange={(newPage) => setLocalPage(newPage)} />
+            <Pagination showControls page={localPage} total={totalLocalPages} onChange={(newPage) => setLocalPage(newPage)} />
         </div>
     );
 
@@ -301,6 +338,7 @@ export default function OurData() {
 
     return (
         <div className="our-data-container flex">
+            <Sidebar />
             <div className="main-content p-6 flex-grow flex flex-col items-start">
                 <h1 className="text-3xl font-bold mb-6 text-center">Our Data Dashboard</h1>
 
@@ -309,7 +347,7 @@ export default function OurData() {
                         Fetched {allRides.length} / {totalCount} total rides
                     </div>
                     {canLoadMore && (
-                        <Button variant="flat" size="sm" onPress={() => setCurrentPage((old) => old + 1)}>
+                        <Button size="sm" variant="flat" onPress={() => setCurrentPage((old) => old + 1)}>
                             Load More
                         </Button>
                     )}
@@ -320,13 +358,13 @@ export default function OurData() {
                     <CardBody>
                         <Table
                             aria-label="All Rides (Client-Side Filtered)"
-                            topContent={topContent}
-                            topContentPlacement="outside"
                             bottomContent={bottomContent}
                             bottomContentPlacement="outside"
+                            topContent={topContent}
+                            topContentPlacement="outside"
                         >
                             <TableHeader columns={columns}>{(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}</TableHeader>
-                            <TableBody items={pageRides} emptyContent="No rides found">
+                            <TableBody emptyContent="No rides found" items={pageRides}>
                                 {(item: any) => (
                                     <TableRow key={`ride-${item.ride_id}-${item.event_timestamp}`}>
                                         {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}

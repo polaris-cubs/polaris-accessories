@@ -1,22 +1,19 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
+import { Inter } from "next/font/google";
 
 import { Providers } from "./providers";
 
-import { siteConfig } from "@/config/site";
-import { fontSans } from "@/config/fonts";
+import Sidebar from "@/components/sidebar/sidebar";
 import { Navbar } from "@/components/navbar/navbar";
+import { fontSans } from "@/config/fonts";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: {
-        default: siteConfig.name,
-        template: `%s - ${siteConfig.name}`,
-    },
-    description: siteConfig.description,
-    icons: {
-        icon: "/favicon.ico",
-    },
+    title: "Polaris Dashboard",
+    description: "Dashboard for Polaris Accessories",
 };
 
 export const viewport: Viewport = {
@@ -30,11 +27,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html suppressHydrationWarning lang="en">
             <head />
-            <body className={clsx("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
+            <body className={clsx("min-h-screen bg-background font-sans antialiased", fontSans.variable, inter.className)}>
                 <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-                    <div className="relative flex flex-col h-screen">
-                        <Navbar />
-                        <main className="container mx-auto max-w-7xl pt-32 px-6 flex-grow">
+                    <Navbar />
+                    <div className="app-container">
+                        <Sidebar />
+                        <main className="main-content">
                             {children}
                         </main>
                     </div>
