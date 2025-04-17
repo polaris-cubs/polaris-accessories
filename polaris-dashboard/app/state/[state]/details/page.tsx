@@ -1,120 +1,40 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import React from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Button } from '@nextui-org/react';
 
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend
-);
-
-interface StateData {
-    totalVehicles: number;
-    activeUsers: number;
-    totalRides: number;
-    monthlyUsage: number[];
-}
+import DetailedCountyMap from "@/components/DetailedCountyMap";
+import { StateDataCharts } from "@/components/StateDataCharts";
 
 export default function StateDetails() {
     const params = useParams();
-    const stateId = params.state as string;
-    const [data, setData] = useState<StateData | null>(null);
-    const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const state = typeof params.state === 'string' ? params.state : '';
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await fetch(`http://localhost:8080/api/state-data/${stateId.toLowerCase()}`);
-                const jsonData = await response.json();
-
-                setData(jsonData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [stateId]);
-
-    if (loading) {
-        return <div className="loading">Loading {stateId} data...</div>;
+    if (!state) {
+        return <div className="p-4 text-red-500">Invalid state parameter</div>;
     }
 
-    const chartData = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        datasets: [
-            {
-                label: 'Monthly Usage',
-                data: data?.monthlyUsage || [],
-                backgroundColor: 'rgba(53, 162, 235, 0.5)',
-            },
-        ],
-    };
-
-    const chartOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'top' as const,
-            },
-            title: {
-                display: true,
-                text: `Monthly Vehicle Usage in ${stateId}`,
-            },
-        },
-    };
-
     return (
-        <div className="state-content">
-            <div className="state-header">
-                <Link 
-                    className="back-button"
-                    href="/"
+        <div className="p-8">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold">{state}</h1>
+                <Button 
+                    color="primary" 
+                    onClick={() => router.push('/')}
                 >
-                    ← Back to US Map
-                </Link>
-                <h1>{stateId} State Data</h1>
+                    Back to US Map
+                </Button>
             </div>
             
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <h3>Total Vehicles</h3>
-                    <p>{data?.totalVehicles}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-white rounded-lg shadow p-4">
+                    <DetailedCountyMap state={state} />
                 </div>
-                <div className="stat-card">
-                    <h3>Active Users</h3>
-                    <p>{data?.activeUsers}</p>
+                <div className="bg-white rounded-lg shadow p-4">
+                    <StateDataCharts state={state} />
                 </div>
-                <div className="stat-card">
-                    <h3>Total Rides</h3>
-                    <p>{data?.totalRides}</p>
-                </div>
-            </div>
-
-            <div className="chart-container">
-                <Bar data={chartData} options={chartOptions} />
-            </div>
-
-            <div className="data-table">
-                <h2>Recent Activity</h2>
-                {/* Add data table component here */}
             </div>
         </div>
     );

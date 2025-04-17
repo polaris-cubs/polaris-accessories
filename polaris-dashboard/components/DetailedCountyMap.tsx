@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
-import { Tooltip } from "@heroui/react";
+import { Tooltip } from "@nextui-org/react";
 import { useRouter } from "next/navigation"; 
 import useSWR from "swr";
 
@@ -11,6 +11,7 @@ import useSWR from "swr";
 const geoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+type StateNames = keyof typeof stateFipsMapping;
 
 // Mapping of state names to their two-digit FIPS prefixes
 const stateFipsMapping = {
@@ -66,8 +67,17 @@ const stateFipsMapping = {
     Wyoming: "56",
 };
 
+type StateCenter = {
+    center: [number, number];
+    zoom: number;
+};
+
+type StateCenterMapping = {
+    [K in StateNames]: StateCenter;
+};
+
 // Approximate center coordinates and zoom levels for each state
-const stateCenterMapping = {
+const stateCenterMapping: StateCenterMapping = {
     Alabama: { center: [-86.9023, 32.3182], zoom: 5 },
     Alaska: { center: [-154.4931, 63.5887], zoom: 3 },
     Arizona: { center: [-111.0937, 34.0489], zoom: 5 },
@@ -120,35 +130,36 @@ const stateCenterMapping = {
     Wyoming: { center: [-107.2903, 43.07597], zoom: 5 },
 };
 
-export default function DetailedCountyMap({ stateName }: { stateName: string }) {
+interface DetailedCountyMapProps {
+    state: string;
+}
+
+export default function DetailedCountyMap({ state }: DetailedCountyMapProps) {
     const router = useRouter();
 
-    const stateFips = stateFipsMapping[stateName];
+    const stateFips = stateFipsMapping[state as StateNames];
+    const stateCenter = stateCenterMapping[state as StateNames];
 
     const { data: vehicleData, error: vehicleError } = useSWR(
-        `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(stateName)}`,
+        `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(state)}`,
         fetcher
     );
     
     const { data: accessoryData, error: accessoryError } = useSWR(
-        `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(stateName)}`,
+        `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(state)}`,
         fetcher
     );
 
     if (!stateFips) {
-        return <div className="text-red-500">❌ No FIPS mapping available for {stateName}</div>;
+        return <div className="text-red-500">❌ No FIPS mapping available for {state}</div>;
     }
 
-    
-            
-    
-    const { center, zoom } = stateCenterMapping[stateName] || { center: [-98, 39], zoom: 5 };
+    const defaultCenter: [number, number] = [-98, 39];
+    const { center, zoom } = stateCenter || { center: defaultCenter, zoom: 5 };
 
     return (
         <div className="relative flex flex-col items-center">
-
-
-            <div className="w-[800px] h-[600px] bg-white shadow-md rounded-lg p-4">
+            <div className="w-full max-w-[800px] h-[400px] bg-content1 rounded-lg p-4">
                 <ComposableMap projection="geoAlbersUsa">
                     <ZoomableGroup center={center} zoom={zoom}>
                         <Geographies geography={geoUrl}>
@@ -175,7 +186,7 @@ export default function DetailedCountyMap({ stateName }: { stateName: string }) 
                 </ComposableMap>
             </div>
 
-            <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-4 mt-6">
+            <div className="w-full bg-content1 rounded-lg p-4 mt-6">
                 <h3 className="text-lg font-semibold">🚗 Vehicle Usage Summary</h3>
                 {vehicleError ? (
                     <p className="text-red-500">Error loading vehicle data</p>
@@ -185,14 +196,14 @@ export default function DetailedCountyMap({ stateName }: { stateName: string }) 
                     <ul className="list-disc pl-6">
                         {vehicleData.map((vehicle: any, index: number) => (
                             <li key={index}>
-                                {vehicle.brand}: {vehicle.rides} rides ({vehicle.vehicles} unique vehicles)
+                                {vehicle.brand}: {vehicle.rides} rides ({vehicle.unique_vehicles} unique vehicles)
                             </li>
                         ))}
                     </ul>
                 )}
             </div>
 
-            <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-4 mt-6">
+            <div className="w-full bg-content1 rounded-lg p-4 mt-6">
                 <h3 className="text-lg font-semibold">🔧 Most Used Accessories</h3>
                 {accessoryError ? (
                     <p className="text-red-500">Error loading accessory data</p>
@@ -202,19 +213,12 @@ export default function DetailedCountyMap({ stateName }: { stateName: string }) 
                     <ul className="list-disc pl-6">
                         {accessoryData.map((accessory: any, index: number) => (
                             <li key={index}>
-                                {accessory.property_name}: {accessory.usage_count} uses
+                                {accessory.accessory_name}: {accessory.usage_count} uses
                             </li>
                         ))}
                     </ul>
                 )}
             </div>
-
-            <button
-                onClick={() => router.push(`/state/${stateName}`)}
-                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-            >
-                View Detailed Data for {stateName}
-            </button>
         </div>
     );
 }

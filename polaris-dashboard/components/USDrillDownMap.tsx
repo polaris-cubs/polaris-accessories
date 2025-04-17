@@ -1,15 +1,18 @@
 "use client";
 
 import React from "react";
-import { ComposableMap, Geographies, Geography, Annotation, ZoomableGroup } from "react-simple-maps";
-import { Popover, PopoverTrigger, PopoverContent, Button } from "@heroui/react";
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import { geoCentroid } from "d3-geo";
 import { useRouter } from "next/navigation";
 
+interface USDrillDownMapProps {
+    usSummary: any;
+    onStateSelect: (state: string) => void;
+}
+
 const usGeoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
-
-const stateAbbrMapping = {
+const stateAbbrMapping: Record<string, string> = {
     Alabama: "AL",
     Alaska: "AK",
     Arizona: "AZ",
@@ -60,142 +63,72 @@ const stateAbbrMapping = {
     Washington: "WA",
     "West Virginia": "WV",
     Wisconsin: "WI",
-    Wyoming: "WY",
+    Wyoming: "WY"
 };
 
-const labelOffsets = {
-    Vermont: { dx: 50, dy: -10 },
-    "New Hampshire": { dx: 60, dy: 0 },
-    Massachusetts: { dx: 40, dy: -10 },
-    "Rhode Island": { dx: 40, dy: 0 },
-    Connecticut: { dx: 40, dy: 30 },
-    "New Jersey": { dx: 40, dy: 20 },
-    Delaware: { dx: 40, dy: 20 },
-    Maryland: { dx: 40, dy: 30 },
-    "District of Columbia": { dx: 50, dy: 50 },
+const stateLabelOffsets: Record<string, { dx: number; dy: number }> = {
+    Vermont: { dx: 0, dy: -20 },
+    "New Hampshire": { dx: 10, dy: -20 },
+    Massachusetts: { dx: 10, dy: -20 },
+    "Rhode Island": { dx: 10, dy: -20 },
+    Connecticut: { dx: 10, dy: -20 },
+    "New Jersey": { dx: 10, dy: -20 },
+    Delaware: { dx: 10, dy: -20 },
+    Maryland: { dx: 10, dy: -20 },
+    "District of Columbia": { dx: 10, dy: -20 }
 };
 
+export default function USDrillDownMap({ usSummary, onStateSelect }: USDrillDownMapProps) {
+    const router = useRouter();
 
+    const handleStateClick = (stateName: string) => {
+        router.push(`/state/${stateName}/details`);
+    };
 
-export default function USDrillDownMap({ usSummary, onStateSelect }) {
-    
     return (
         <div className="relative" style={{ width: "800px", height: "600px"}}>
-            <ComposableMap projection="geoAlbersUsa" style={{ width: "800px", height: "450px" }}>
+            <ComposableMap projection="geoAlbersUsa">
                 <ZoomableGroup>
                     <Geographies geography={usGeoUrl}>
-                        {({ geographies, projection }) =>
-                            geographies.map((geo) => {
-                                const stateName = geo.properties.name;
-                                const abbr = stateAbbrMapping[stateName] || stateName;
-                                const centroid = geoCentroid(geo);
-                                const [cx, cy] = projection(centroid) || [];
-                                const offset = labelOffsets[stateName] || { dx: 0, dy: 0 };
-                                const connector =
-                                    offset.dx !== 0 || offset.dy !== 0
-                                        ? { stroke: "#57a2b5", strokeWidth: 1, strokeLinecap: "round" }
-                                        : { stroke: "none" };
+                        {({ geographies, projection }) => (
+                            <>
+                                {geographies.map(geo => {
+                                    const stateName = geo.properties.name;
+                                    const abbr = stateAbbrMapping[stateName];
+                                    const centroid = geoCentroid(geo);
+                                    const offset = stateLabelOffsets[stateName] || { dx: 0, dy: 0 };
+                                    const [x, y] = projection(centroid) || [0, 0];
 
-                                // Find aggregated data for the state if available.
-                                const stateData = usSummary.find((s) => s.state === stateName);
-                                const popoverContent = (
-                                    <div className="p-2">
-                                        <div className="text-sm font-bold">{stateName}</div>
-                                        {stateData && (
-                                            <>
-                                                <div className="text-xs mt-2">
-                                                    Vehicles: {stateData.vehicles} <br />
-                                                    Rides: {stateData.rides} <br />
-                                                    Customers: {stateData.customers}
-                                                    {stateData.brand_averages && (
-                                                        // <>
-                                                        //     <br />
-                                                        //     {stateData.brand_averages.map((brandObj) => (
-                                                        //         <>
-                                                        //             <div className="text-xs mt-2">
-                                                        //                 {brandObj.brand} <br />
-                                                        //                 <ul>
-                                                        //                     <li>Rides: {brandObj.rides}</li>
-                                                        //                     <li>Vehicles: {brandObj.vehicles}</li>
-                                                        //                     <li>Avg Rides: {brandObj.avg_rides}</li>
-                                                        //                 </ul>
-                                                        //             </div>
-                                                        //         </>
-                                                        //     ))}
-                                                        // </>
-                                                        <>
-                                                            {stateData.brand_averages.map((brandObj) => (
-                                                                <div key={brandObj.brand} className="text-xs">
-                                                                    {brandObj.brand}: {brandObj.vehicles}
-                                                                </div>
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-                                        <div className="pt-2">
-                                            <Button
-                                                className="bg-[#084c94] text-white"
-                                                size="sm"
-                                                variant="flat"
-                                                onPress={() => onStateSelect(stateName)}
-                                            >
-                                                View state details
-                                            </Button>
-                                        </div>
-                                    </div>
-                                );
-
-                                return (
-                                    <g key={geo.rsmKey}>
-                                        <Popover
-                                            containerPadding={0}
-                                            placement="top"
-                                            portalContainer={document.body}
-                                            triggerScaleOnOpen={false}
-                                        >
-                                            <PopoverTrigger>
-                                                <g style={{ cursor: "pointer" }}>
-                                                    <Geography
-                                                        fill="#cbe9f2"
-                                                        geography={geo}
-                                                        stroke="#FFFFFF"
-                                                        strokeWidth={1}
-                                                        style={{
-                                                            default: { outline: "none" },
-                                                            hover: { outline: "none", fill: "#084c94" },
-                                                            pressed: { outline: "none", fill: "#B0BEC5" },
-                                                        }}
-                                                    />
-                                                    {cx && cy && (
-                                                        <Annotation
-                                                            connectorProps={connector}
-                                                            dx={offset.dx}
-                                                            dy={offset.dy}
-                                                            subject={centroid}
-                                                        >
-                                                            <text
-                                                                alignmentBaseline="middle"
-                                                                fill="#57a2b5"
-                                                                fontSize={12}
-                                                                fontWeight="bold"
-                                                                style={{ pointerEvents: "none" }}
-                                                                textAnchor={offset.dx !== 0 || offset.dy !== 0 ? "end" : "middle"}
-                                                                x={offset.dx !== 0 || offset.dy !== 0 ? "20" : undefined}
-                                                            >
-                                                                {abbr}
-                                                            </text>
-                                                        </Annotation>
-                                                    )}
-                                                </g>
-                                            </PopoverTrigger>
-                                            <PopoverContent>{popoverContent}</PopoverContent>
-                                        </Popover>
-                                    </g>
-                                );
-                            })
-                        }
+                                    return (
+                                        <React.Fragment key={geo.rsmKey}>
+                                            <Geography
+                                                fill="#DDD"
+                                                geography={geo}
+                                                stroke="#FFF"
+                                                strokeWidth={0.5}
+                                                style={{
+                                                    default: { outline: "none" },
+                                                    hover: { outline: "none", fill: "#999" },
+                                                    pressed: { outline: "none", fill: "#666" }
+                                                }}
+                                                onClick={() => handleStateClick(stateName)}
+                                            />
+                                            <g transform={`translate(${x + offset.dx}, ${y + offset.dy})`}>
+                                                <circle fill="#000" r={2} />
+                                                <text
+                                                    alignmentBaseline="middle"
+                                                    fill="#000"
+                                                    fontSize={10}
+                                                    textAnchor="middle"
+                                                >
+                                                    {abbr}
+                                                </text>
+                                            </g>
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </>
+                        )}
                     </Geographies>
                 </ZoomableGroup>
             </ComposableMap>

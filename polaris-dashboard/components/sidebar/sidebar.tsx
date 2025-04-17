@@ -15,11 +15,11 @@ const subNavItems = [
 ];
 
 const stateNavItems = [
-    { id: 'Wisconsin', label: 'Wisconsin' },
-    { id: 'Indiana', label: 'Indiana' },
-    { id: 'Minnesota', label: 'Minnesota' },
-    { id: 'Michigan', label: 'Michigan' },
-    { id: 'Illinois', label: 'Illinois' }
+    { id: 'Wisconsin', label: 'Wisconsin', href: '/state/Wisconsin/details' },
+    { id: 'Indiana', label: 'Indiana', href: '/state/Indiana/details' },
+    { id: 'Minnesota', label: 'Minnesota', href: '/state/Minnesota/details' },
+    { id: 'Michigan', label: 'Michigan', href: '/state/Michigan/details' },
+    { id: 'Illinois', label: 'Illinois', href: '/state/Illinois/details' }
 ];
 
 export default function Sidebar() {
@@ -69,7 +69,7 @@ export default function Sidebar() {
                     <Link 
                         key={`sidebar-${item.id}`} 
                         className={pathname.includes(item.id.toLowerCase()) ? 'active' : ''}
-                        href={`/state/${item.id}/details`}
+                        href={item.href}
                     >
                         {item.label}
                     </Link>
