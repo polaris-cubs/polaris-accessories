@@ -718,6 +718,81 @@ ORDER BY ride_date;
     json.NewEncoder(w).Encode(results)
 }
 
+func getSnowplowUsage(w http.ResponseWriter, r *http.Request) {
+    state := r.URL.Query().Get("state")
+    vehicleID := r.URL.Query().Get("vehicle_id")
+    customerID := r.URL.Query().Get("customer_id")
+    vehicle := r.URL.Query().Get("vehicle")
+
+    // We'll parse each row's "property_values" JSON array
+    // using "json_each()" on fact_vehicle_ride.
+    query := `
+SELECT STRFTIME('%Y %m', r.event_timestamp) AS month,
+       COUNT(DISTINCT r.customer_id) AS num_users,
+       COUNT(DISTINCT r.ride_id) AS num_uses
+FROM fact_vehicle_ride r
+JOIN dim_customer c ON r.customer_id = c.customer_id
+JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+-- This is how we "unpack" the JSON array stored in r.property_values
+JOIN json_each(r.property_values) j
+-- Then we link the JSON "id" to dim_property.property_id
+JOIN dim_property p
+  ON p.property_id = CAST(json_extract(j.value, '$.id') AS INTEGER)
+WHERE 1=1
+`
+    var params []interface{}
+
+    if state != "" {
+        query += " AND c.state = ?"
+        params = append(params, state)
+    }
+    if vehicleID != "" {
+        query += " AND r.vehicle_id = ?"
+        params = append(params, vehicleID)
+    }
+    if customerID != "" {
+        query += " AND r.customer_id = ?"
+        params = append(params, customerID)
+    }
+    if vehicle != "" {
+        query += " AND v.brand = ?"
+        params = append(params, vehicle)
+    }
+
+
+    query+= " AND p.property_name = 'plow_state' AND r.property_values LIKE '%DOWN%'"
+
+    // Group by month
+    query += " GROUP BY month ORDER BY p.property_name;"
+
+    rows, err := db.Query(query, params...)
+    if err != nil {
+        http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
+
+    type AccessorySummary struct {
+        YearMonth    string `json:"month"`
+        NumberUsers  int    `json:"num_users"`
+        NumberUses   int    `json:"num_uses"`
+    }
+    var results []AccessorySummary
+
+    for rows.Next() {
+        var a AccessorySummary
+        if err := rows.Scan(&a.YearMonth, &a.NumberUsers, &a.NumberUses); err != nil {
+            http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
+            return
+        }
+        results = append(results, a)
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(results)
+}
+
+
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
@@ -745,7 +820,9 @@ func main() {
     mux.HandleFunc("/api/vehicle", getUniqueVehicles)
 
     // Accessory usage
-    mux.HandleFunc("/api/snowplow-usage", getSnowplowUsagePerRide)
+    //mux.HandleFunc("/api/snowplow-usage", getSnowplowUsagePerRide)
+
+    mux.HandleFunc("/api/snowplow-usage", getSnowplowUsage)
 
     handler := corsMiddleware(mux)
 
