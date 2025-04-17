@@ -17,11 +17,11 @@ export default function Home() {
     const { data: usSummary, error: summaryError } = useSWR("http://localhost:8080/api/us-summary", fetcher);
     const { data: vehicleData } = useSWR(
         selectedState ? `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(selectedState)}` : null,
-        fetcher
+        fetcher,
     );
     const { data: accessoryData } = useSWR(
         selectedState ? `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(selectedState)}` : null,
-        fetcher
+        fetcher,
     );
 
     if (summaryError) return <div>Error loading US summary data.</div>;
@@ -32,7 +32,6 @@ export default function Home() {
             <Sidebar className="w-[20%] h-full" />
 
             <div className="main-content flex w-full">
-                
                 {/* 지도 섹션 (왼쪽) */}
                 <div className="w-1/2 flex justify-center items-center transition-all duration-700">
                     <USDrillDownMap
@@ -67,7 +66,9 @@ export default function Home() {
                         {vehicleData ? (
                             <ul>
                                 {vehicleData.map((v: any) => (
-                                    <li key={v.brand}>{v.brand}: {v.rides} rides, {v.vehicles} vehicles</li>
+                                    <li key={v.brand}>
+                                        {v.brand}: {v.rides} rides, {v.vehicles} vehicles
+                                    </li>
                                 ))}
                             </ul>
                         ) : (
@@ -80,7 +81,9 @@ export default function Home() {
                         {accessoryData ? (
                             <ul>
                                 {accessoryData.map((a: any) => (
-                                    <li key={a.property_name}>{a.property_name}: {a.usage_count} uses</li>
+                                    <li key={a.property_name}>
+                                        {a.property_name}: {a.usage_count} uses
+                                    </li>
                                 ))}
                             </ul>
                         ) : (

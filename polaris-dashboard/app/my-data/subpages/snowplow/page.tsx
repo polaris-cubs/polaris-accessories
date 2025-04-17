@@ -12,23 +12,14 @@ import {
     Title,
     Tooltip,
     Legend,
-    ChartOptions
+    ChartOptions,
 } from "chart.js";
 
 import Sidebar from "@/components/sidebar/sidebar";
 import "@/app/my-data/subpages/snowplow/snowplow.css";
 
 // Register required chart.js components
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    LineElement,
-    PointElement,
-    Title,
-    Tooltip,
-    Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 // Types for API responses
 type AverageUsesSummary = {
@@ -104,16 +95,16 @@ const lineOptions: ChartOptions<"line"> = {
             beginAtZero: true,
             title: {
                 display: true,
-                text: "Number of Uses"
-            }
+                text: "Number of Uses",
+            },
         },
         x: {
             title: {
                 display: true,
-                text: "Time of Day"
-            }
-        }
-    }
+                text: "Time of Day",
+            },
+        },
+    },
 };
 
 export default function Snowplow() {
@@ -122,98 +113,94 @@ export default function Snowplow() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-            const fetchData = async () => {
-                try {
-                    // Fetch time series and vehicle data
-                    const [averageUsesRes] = await Promise.all([
-                        fetch('http://localhost:8080/api/snowplow-usage')
-                    ]);
-    
-                    if (!averageUsesRes.ok) {
-                        throw new Error('Failed to fetch data');
-                    }
-    
-                    const [averageUsesJson] = await Promise.all([
-                        averageUsesRes.json(),
-                    ]);
-    
-                    setAverageUsesData(averageUsesJson);
-                    setLoading(false);
-                } catch (err) {
-                    console.error('Error in fetchData:', err);
-                    setError(err instanceof Error ? err.message : 'An error occurred');
-                    setLoading(false);
+        const fetchData = async () => {
+            try {
+                // Fetch time series and vehicle data
+                const [averageUsesRes] = await Promise.all([fetch("http://localhost:8080/api/snowplow-usage")]);
+
+                if (!averageUsesRes.ok) {
+                    throw new Error("Failed to fetch data");
                 }
-            };
-    
-            fetchData();
-        }, []);
 
-        if (loading) {
-                return (
-                    <div className="snowplow-container">
-                        <Sidebar />
-                        <div className="main-content">
-                            <div className="loading">Loading data...</div>
-                        </div>
-                    </div>
-                );
+                const [averageUsesJson] = await Promise.all([averageUsesRes.json()]);
+
+                setAverageUsesData(averageUsesJson);
+                setLoading(false);
+            } catch (err) {
+                console.error("Error in fetchData:", err);
+                setError(err instanceof Error ? err.message : "An error occurred");
+                setLoading(false);
             }
+        };
 
-        if (error) {
-                return (
-                    <div className="snowplow-container">
-                        <Sidebar />
-                        <div className="main-content">
-                            <div className="error">Error: {error}</div>
-                        </div>
-                    </div>
-                );
-            }
+        fetchData();
+    }, []);
 
-            const averageUsageData = {
-                labels: averageUsesData.map(d => d.month),
-                datasets: [
-                    {
-                        label: "Average Uses of Snow Plow Accessory per Customer in Each Winter Month",
-                        data: averageUsesData.map(d => d.num_uses / d.num_users),
-                        backgroundColor: "rgba(75, 192, 192, 0.6)",
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-            };
+    if (loading) {
+        return (
+            <div className="snowplow-container">
+                <Sidebar />
+                <div className="main-content">
+                    <div className="loading">Loading data...</div>
+                </div>
+            </div>
+        );
+    }
 
-        const barOptions: ChartOptions<"bar"> = {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: "top",
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `Avg. Usage Per Customer: ${context.raw}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: "Average Uses of Snow Plow Accessory per Customer",
-                        },
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: "Year/Month",
-                        },
+    if (error) {
+        return (
+            <div className="snowplow-container">
+                <Sidebar />
+                <div className="main-content">
+                    <div className="error">Error: {error}</div>
+                </div>
+            </div>
+        );
+    }
+
+    const averageUsageData = {
+        labels: averageUsesData.map((d) => d.month),
+        datasets: [
+            {
+                label: "Average Uses of Snow Plow Accessory per Customer in Each Winter Month",
+                data: averageUsesData.map((d) => d.num_uses / d.num_users),
+                backgroundColor: "rgba(75, 192, 192, 0.6)",
+                borderColor: "rgba(75, 192, 192, 1)",
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const barOptions: ChartOptions<"bar"> = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: "top",
+            },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        return `Avg. Usage Per Customer: ${context.raw}`;
                     },
                 },
-            };
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: "Average Uses of Snow Plow Accessory per Customer",
+                },
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: "Year/Month",
+                },
+            },
+        },
+    };
 
     return (
         <div className="snowplow-container">
@@ -243,9 +230,9 @@ export default function Snowplow() {
                 <div className="data-summary mt-10 p-6 bg-white rounded-lg shadow">
                     <h2 className="text-2xl font-semibold mb-4">Summary</h2>
                     <p className="text-gray-600">
-                        This page displays the distribution and analysis of snow plow data across different categories.
-                        The bar chart above shows the relative proportions of each category in the dataset.
-                        The line chart visualizes the most common time of day snowplows are used.
+                        This page displays the distribution and analysis of snow plow data across different categories. The bar chart above
+                        shows the relative proportions of each category in the dataset. The line chart visualizes the most common time of
+                        day snowplows are used.
                     </p>
                 </div>
             </div>

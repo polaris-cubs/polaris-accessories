@@ -35,7 +35,7 @@ export default function Sidebar() {
     };
 
     // Only show sub-navigation for My Data and Our Data pages
-    const showSubNav = ['my-data', 'our-data'].includes(currentPath);
+    const showSubNav = ['my-data'].includes(currentPath);
 
     return (
         <div className="sidebar">

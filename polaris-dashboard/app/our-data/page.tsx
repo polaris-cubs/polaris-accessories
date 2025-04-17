@@ -22,6 +22,11 @@ import {
     SortDescriptor,
 } from "@heroui/react";
 
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
+
 import Sidebar from "@/components/sidebar/sidebar";
 import { Bar, Line } from "react-chartjs-2";
 import {
@@ -430,7 +435,7 @@ function DataContent() {
                             sortDescriptor={sortDescriptor}
                             onSortChange={setSortDescriptor}
                             selectionMode="multiple"
-                            selectionBehavior="checkbox"
+                            selectionBehavior="toggle"
                             selectedKeys={selectedKeys}
                             onSelectionChange={setSelectedKeys}
                             topContentPlacement="outside"
@@ -488,7 +493,7 @@ function DataContent() {
                         >
                             <TableHeader columns={aggregatedColumns}>
                                 {(c) => (
-                                    <TableColumn key={c.uid} allowsSorting={c.sortable}>
+                                    <TableColumn key={c.uid} allowsSorting={c.sortable} className={c.uid === "count" ? "text-center" : ""}>
                                         {c.name}
                                     </TableColumn>
                                 )}
@@ -500,9 +505,11 @@ function DataContent() {
                                         <React.Fragment key={`group-${groupItem.group}`}>
                                             {/* Group Header Row */}
                                             <TableRow>
-                                                <TableCell>
+                                                <TableCell className="align-middle flex items-center gap-2">
                                                     <Button
                                                         size="sm"
+                                                        isIconOnly
+                                                        variant="flat"
                                                         onPress={() =>
                                                             setExpandedGroups((prev) => {
                                                                 const newSet = new Set(prev);
@@ -515,59 +522,66 @@ function DataContent() {
                                                             })
                                                         }
                                                     >
-                                                        {groupExpanded ? "–" : "+"}
+                                                        {groupExpanded ? (
+                                                            <VisibilityOffIcon fontSize="small" />
+                                                        ) : (
+                                                            <VisibilityIcon fontSize="small" />
+                                                        )}
                                                     </Button>
-                                                    <span className="ml-2">{groupItem.group}</span>
+                                                    <span>{groupItem.group}</span>
                                                 </TableCell>
-                                                <TableCell>{groupItem.count}</TableCell>
+                                                <TableCell className="text-center">{groupItem.count}</TableCell>
                                             </TableRow>
                                             {groupExpanded &&
-                                                // Render a row for each ride group (unique ride id) within the aggregated group.
                                                 groupItem.rideGroups.map((rideGroup) => {
                                                     const rideKey = `${groupItem.group}-${rideGroup.rideId}`;
                                                     const rideExpanded = expandedRides.has(rideKey);
                                                     const rep = rideGroup.rides[0];
+
                                                     return (
                                                         <React.Fragment key={rideKey}>
-                                                            {/* Ride Summary Row; make the entire row clickable */}
-                                                            <TableRow onClick={() => toggleRide(rideKey)} style={{ cursor: "pointer" }}>
-                                                                <TableCell>
+                                                            {/* Ride Summary Row: only the icon is clickable */}
+                                                            <TableRow>
+                                                                <TableCell className="align-middle flex items-center gap-2 pl-12">
                                                                     <Button
-                                                                        size="xs"
-                                                                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                                                            e.stopPropagation();
-                                                                            toggleRide(rideKey);
-                                                                        }}
+                                                                        size="sm"
+                                                                        isIconOnly
+                                                                        variant="flat"
+                                                                        onPress={() => toggleRide(rideKey)}
                                                                     >
-                                                                        {rideExpanded ? "–" : "+"}
-                                                                    </Button>{" "}
-                                                                    <span className="ml-2">
+                                                                        {rideExpanded ? (
+                                                                            <RemoveIcon fontSize="small" />
+                                                                        ) : (
+                                                                            <AddIcon fontSize="small" />
+                                                                        )}
+                                                                    </Button>
+                                                                    <span>
                                                                         Ride ID: {rep.ride_id} | Brand: {rep.brand} | Vehicle:{" "}
                                                                         {rep.vehicle_id} | Customer: {rep.customer_id}
                                                                     </span>
                                                                 </TableCell>
-                                                                <TableCell>{/* Empty cell for structure */}</TableCell>
+                                                                <TableCell className="invisible" />
                                                             </TableRow>
+
+                                                            {/* Ride Detail Rows */}
                                                             {rideExpanded &&
-                                                                // List all rows for this ride id.
                                                                 rideGroup.rides.map((r, idx) => (
                                                                     <TableRow key={`ride-${rideKey}-details-${idx}`}>
-                                                                        <TableCell>
-                                                                            <div className="pl-4">
-                                                                                <p>
-                                                                                    <strong>State:</strong> {r.state}
-                                                                                </p>
-                                                                                <p>
+                                                                        <TableCell className="pl-24">
+                                                                            <div className="flex items-center gap-4">
+                                                                                <span>
                                                                                     <strong>Timestamp:</strong>{" "}
                                                                                     {new Date(r.event_timestamp).toLocaleString()}
-                                                                                </p>
-                                                                                <p>
-                                                                                    <strong>Props:</strong>{" "}
-                                                                                    {JSON.stringify(r.property_values)}
-                                                                                </p>
+                                                                                </span>
+                                                                                <span>
+                                                                                    <strong>State:</strong> {r.state}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="mt-2">
+                                                                                <strong>Props:</strong> {JSON.stringify(r.property_values)}
                                                                             </div>
                                                                         </TableCell>
-                                                                        <TableCell>{/* Empty cell */}</TableCell>
+                                                                        <TableCell className="hidden" />
                                                                     </TableRow>
                                                                 ))}
                                                         </React.Fragment>
@@ -628,12 +642,12 @@ export default function OurDataWrapper() {
         return null;
     }
     return (
-        <div className="flex h-screen">
+        <div className="flex w-[100%] h-screen">
             {/* Sidebar on the left */}
-            <Sidebar />
+            <Sidebar className="w-[20%] h-full" />
 
             {/* Main content area */}
-            <div className="flex-1 overflow-auto">
+            <div>
                 <DataContent />
             </div>
         </div>
