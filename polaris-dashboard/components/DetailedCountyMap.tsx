@@ -159,13 +159,17 @@ export default function DetailedCountyMap({ state }: DetailedCountyMapProps) {
 
     return (
         <div className="relative flex flex-col items-center">
-            <div className="w-full max-w-[800px] h-[400px] bg-content1 rounded-lg p-4">
+            <div className="mt-20 mb-8">
+                <h2 className="text-3xl font-bold">{state} - Data Panel</h2>
+            </div>
+
+            <div className="w-[800px] h-[600px] bg-white shadow-md rounded-lg p-4">
                 <ComposableMap projection="geoAlbersUsa">
                     <ZoomableGroup center={center} zoom={zoom}>
                         <Geographies geography={geoUrl}>
                             {({ geographies }) =>
                                 geographies
-                                    .filter((geo) => geo.id && geo.id.startsWith(stateFips)) 
+                                    .filter((geo) => geo.id && geo.id.startsWith(stateFips))
                                     .map((geo) => (
                                         <Tooltip key={geo.rsmKey} content={geo.properties.name}>
                                             <Geography
@@ -186,39 +190,48 @@ export default function DetailedCountyMap({ state }: DetailedCountyMapProps) {
                 </ComposableMap>
             </div>
 
-            <div className="w-full bg-content1 rounded-lg p-4 mt-6">
-                <h3 className="text-lg font-semibold">🚗 Vehicle Usage Summary</h3>
-                {vehicleError ? (
-                    <p className="text-red-500">Error loading vehicle data</p>
-                ) : !vehicleData ? (
-                    <p>Loading vehicle data...</p>
-                ) : (
-                    <ul className="list-disc pl-6">
-                        {vehicleData.map((vehicle: any, index: number) => (
-                            <li key={index}>
-                                {vehicle.brand}: {vehicle.rides} rides ({vehicle.unique_vehicles} unique vehicles)
-                            </li>
-                        ))}
-                    </ul>
-                )}
+            <div className="flex gap-6 mt-6">
+                <div className="w-[400px] bg-white shadow-md rounded-lg p-4">
+                    <h3 className="text-lg font-semibold">🚗 Vehicle Usage Summary</h3>
+                    {vehicleError ? (
+                        <p className="text-red-500">Error loading vehicle data</p>
+                    ) : !vehicleData ? (
+                        <p>Loading vehicle data...</p>
+                    ) : (
+                        <ul className="list-disc pl-6 mt-2">
+                            {vehicleData.map((vehicle: any, index: number) => (
+                                <li key={index} className="mb-1">
+                                    {vehicle.brand}: {vehicle.rides} rides ({vehicle.vehicles} unique vehicles)
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div className="w-[400px] bg-white shadow-md rounded-lg p-4">
+                    <h3 className="text-lg font-semibold">🔧 Most Used Accessories</h3>
+                    {accessoryError ? (
+                        <p className="text-red-500">Error loading accessory data</p>
+                    ) : !accessoryData ? (
+                        <p>Loading accessory data...</p>
+                    ) : (
+                        <ul className="list-disc pl-6 mt-2">
+                            {accessoryData.map((accessory: any, index: number) => (
+                                <li key={index} className="mb-1">
+                                    {accessory.property_name}: {accessory.usage_count} uses
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
             </div>
 
-            <div className="w-full bg-content1 rounded-lg p-4 mt-6">
-                <h3 className="text-lg font-semibold">🔧 Most Used Accessories</h3>
-                {accessoryError ? (
-                    <p className="text-red-500">Error loading accessory data</p>
-                ) : !accessoryData ? (
-                    <p>Loading accessory data...</p>
-                ) : (
-                    <ul className="list-disc pl-6">
-                        {accessoryData.map((accessory: any, index: number) => (
-                            <li key={index}>
-                                {accessory.accessory_name}: {accessory.usage_count} uses
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
+            <button
+                className="mt-8 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                onClick={() => router.push(`/state/${state}`)}
+            >
+                View Detailed Data for {state}
+            </button>
         </div>
     );
 }

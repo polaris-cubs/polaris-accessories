@@ -6,8 +6,8 @@ import { geoCentroid } from "d3-geo";
 import { useRouter } from "next/navigation";
 
 interface USDrillDownMapProps {
-    usSummary: any;
-    onStateSelect: (state: string) => void;
+    usSummary?: any;
+    onStateSelect?: (state: string) => void;
 }
 
 const usGeoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
@@ -78,16 +78,22 @@ const stateLabelOffsets: Record<string, { dx: number; dy: number }> = {
     "District of Columbia": { dx: 10, dy: -20 }
 };
 
+const dataStates = ["Wisconsin", "Indiana", "Minnesota", "Michigan", "Illinois"];
+
 export default function USDrillDownMap({ usSummary, onStateSelect }: USDrillDownMapProps) {
     const router = useRouter();
 
     const handleStateClick = (stateName: string) => {
-        router.push(`/state/${stateName}/details`);
+        if (onStateSelect) {
+            onStateSelect(stateName);
+        } else {
+            router.push(`/state/${stateName}/details`);
+        }
     };
 
     return (
         <div className="relative" style={{ width: "800px", height: "600px"}}>
-            <ComposableMap projection="geoAlbersUsa">
+            <ComposableMap projection="geoAlbersUsa" style={{ width: "800px", height: "450px" }}>
                 <ZoomableGroup>
                     <Geographies geography={usGeoUrl}>
                         {({ geographies, projection }) => (
@@ -97,27 +103,30 @@ export default function USDrillDownMap({ usSummary, onStateSelect }: USDrillDown
                                     const abbr = stateAbbrMapping[stateName];
                                     const centroid = geoCentroid(geo);
                                     const offset = stateLabelOffsets[stateName] || { dx: 0, dy: 0 };
-                                    const [x, y] = projection(centroid) || [0, 0];
+                                    const projectedCentroid = projection(centroid);
+                                    const hasData = dataStates.includes(stateName);
+                                    
+                                    if (!projectedCentroid) return null;
+                                    const [x, y] = projectedCentroid;
 
                                     return (
                                         <React.Fragment key={geo.rsmKey}>
                                             <Geography
-                                                fill="#DDD"
+                                                fill={hasData ? "#084c94" : "#cbe9f2"}
                                                 geography={geo}
                                                 stroke="#FFF"
                                                 strokeWidth={0.5}
                                                 style={{
                                                     default: { outline: "none" },
-                                                    hover: { outline: "none", fill: "#999" },
+                                                    hover: { outline: "none", fill: hasData ? "#063a72" : "#a8d7e4" },
                                                     pressed: { outline: "none", fill: "#666" }
                                                 }}
                                                 onClick={() => handleStateClick(stateName)}
                                             />
                                             <g transform={`translate(${x + offset.dx}, ${y + offset.dy})`}>
-                                                <circle fill="#000" r={2} />
                                                 <text
                                                     alignmentBaseline="middle"
-                                                    fill="#000"
+                                                    fill={hasData ? "#FFF" : "#000"}
                                                     fontSize={10}
                                                     textAnchor="middle"
                                                 >

@@ -6,6 +6,7 @@ import { Button } from '@nextui-org/react';
 
 import DetailedCountyMap from "@/components/DetailedCountyMap";
 import { StateDataCharts } from "@/components/StateDataCharts";
+import Sidebar from "@/components/sidebar/sidebar";
 
 export default function StateDetails() {
     const params = useParams();
@@ -17,23 +18,22 @@ export default function StateDetails() {
     }
 
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">{state}</h1>
-                <Button 
-                    color="primary" 
-                    onClick={() => router.push('/')}
-                >
-                    Back to US Map
-                </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white rounded-lg shadow p-4">
-                    <DetailedCountyMap state={state} />
-                </div>
-                <div className="bg-white rounded-lg shadow p-4">
-                    <StateDataCharts state={state} />
+        <div className="flex min-h-screen">
+            <Sidebar />
+            <div className="flex-1 ml-[256px]">
+                <div className="p-8">
+                    <Button 
+                        className="mb-6" 
+                        color="primary"
+                        onClick={() => router.push('/')}
+                    >
+                        Back to US Map
+                    </Button>
+                    
+                    <div className="flex flex-col gap-8">
+                        <DetailedCountyMap state={state} />
+                        <StateDataCharts state={state} />
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import useSWR from "swr";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
@@ -10,59 +10,44 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 interface StateDataChartsProps {
-    state?: string;
+    state: string;
 }
 
 export const StateDataCharts: React.FC<StateDataChartsProps> = ({ state }) => {
-    const [showCharts, setShowCharts] = useState<boolean>(false);
-
-    const { data: vehicleData } = useSWR(
+    const { data: vehicleData, error: vehicleError } = useSWR(
         state ? `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(state)}` : null,
         fetcher
     );
-    const { data: accessoryData } = useSWR(
+
+    const { data: accessoryData, error: accessoryError } = useSWR(
         state ? `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(state)}` : null,
         fetcher
     );
 
+    if (vehicleError || accessoryError) {
+        return <div className="text-red-500">Error loading state data.</div>;
+    }
+
+    if (!state) {
+        return <div className="text-red-500">Invalid state parameter</div>;
+    }
+
     return (
-        <div className="w-full">
-            <div className="mt-6 p-4 bg-white shadow-md rounded-lg w-full">
-                <h2 className="text-xl font-semibold">🚗 Vehicle Usage Summary</h2>
+        <div className="w-full max-w-2xl">
+            <div className="p-4 bg-white shadow-md rounded-lg">
+                <h2 className="text-xl font-semibold mb-4">🚗 Vehicle Usage Summary</h2>
                 {vehicleData ? (
-                    <ul className="list-disc pl-6">
+                    <ul className="list-disc pl-6 mb-4">
                         {vehicleData.map((v: any) => (
-                            <li key={v.brand}>{v.brand}: {v.rides} rides, {v.vehicles} vehicles</li>
+                            <li key={v.brand}>
+                                {v.brand}: {v.rides} rides ({v.vehicles} unique vehicles)
+                            </li>
                         ))}
                     </ul>
                 ) : (
                     <p>Loading vehicle data...</p>
                 )}
-            </div>
-
-            <div className="mt-6 p-4 bg-white shadow-md rounded-lg w-full">
-                <h2 className="text-xl font-semibold">🔧 Most Used Accessories</h2>
-                {accessoryData ? (
-                    <ul className="list-disc pl-6">
-                        {accessoryData.map((a: any) => (
-                            <li key={a.property_name}>{a.property_name}: {a.usage_count} uses</li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p>Loading accessory data...</p>
-                )}
-            </div>
-
-            <button
-                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() => setShowCharts(!showCharts)}
-            >
-                {showCharts ? "Hide Detailed Data" : `View Detailed Data for ${state}`}
-            </button>
-
-            {showCharts && vehicleData && (
-                <div className="mt-6 p-4 bg-white shadow-md rounded-lg w-full">
-                    <h2 className="text-xl font-semibold">📊 Vehicle Data</h2>
+                {vehicleData && (
                     <Bar
                         data={{
                             labels: vehicleData.map((v: any) => v.brand),
@@ -87,12 +72,23 @@ export const StateDataCharts: React.FC<StateDataChartsProps> = ({ state }) => {
                             }
                         }}
                     />
-                </div>
-            )}
+                )}
+            </div>
 
-            {showCharts && accessoryData && (
-                <div className="mt-6 p-4 bg-white shadow-md rounded-lg w-full">
-                    <h2 className="text-xl font-semibold">📊 Accessory Usage</h2>
+            <div className="mt-6 p-4 bg-white shadow-md rounded-lg">
+                <h2 className="text-xl font-semibold mb-4">🔧 Most Used Accessories</h2>
+                {accessoryData ? (
+                    <ul className="list-disc pl-6 mb-4">
+                        {accessoryData.map((a: any) => (
+                            <li key={a.property_name}>
+                                {a.property_name}: {a.usage_count} uses
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p>Loading accessory data...</p>
+                )}
+                {accessoryData && (
                     <Bar
                         data={{
                             labels: accessoryData.map((a: any) => a.property_name),
@@ -117,8 +113,8 @@ export const StateDataCharts: React.FC<StateDataChartsProps> = ({ state }) => {
                             }
                         }}
                     />
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }; 
