@@ -4,7 +4,7 @@ import React from "react";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import { Tooltip } from "@nextui-org/react";
 import { useRouter } from "next/navigation"; 
-import useSWR from "swr";
+import { Button } from "@nextui-org/react";
 
 
 // GeoJSON source for US counties
@@ -130,25 +130,18 @@ const stateCenterMapping: StateCenterMapping = {
     Wyoming: { center: [-107.2903, 43.07597], zoom: 5 },
 };
 
-interface DetailedCountyMapProps {
+export interface DetailedCountyMapProps {
     state: string;
+    vehicleData?: any;
+    accessoryData?: any;
+    isLoading?: boolean;
 }
 
-export default function DetailedCountyMap({ state }: DetailedCountyMapProps) {
+export default function DetailedCountyMap({ state, vehicleData, accessoryData, isLoading }: DetailedCountyMapProps) {
     const router = useRouter();
 
     const stateFips = stateFipsMapping[state as StateNames];
     const stateCenter = stateCenterMapping[state as StateNames];
-
-    const { data: vehicleData, error: vehicleError } = useSWR(
-        `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(state)}`,
-        fetcher
-    );
-    
-    const { data: accessoryData, error: accessoryError } = useSWR(
-        `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(state)}`,
-        fetcher
-    );
 
     if (!stateFips) {
         return <div className="text-red-500">❌ No FIPS mapping available for {state}</div>;
@@ -158,80 +151,105 @@ export default function DetailedCountyMap({ state }: DetailedCountyMapProps) {
     const { center, zoom } = stateCenter || { center: defaultCenter, zoom: 5 };
 
     return (
-        <div className="relative flex flex-col items-center">
-            <div className="mt-20 mb-8">
-                <h2 className="text-3xl font-bold">{state} - Data Panel</h2>
+        <div className="w-full bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-gray-800">{state} Geographic Overview</h2>
+                <Button 
+                    color="primary"
+                    variant="light"
+                    onClick={() => router.push('/')}
+                >
+                    ← Back to US Map
+                </Button>
             </div>
 
-            <div className="w-[800px] h-[600px] bg-white shadow-md rounded-lg p-4">
-                <ComposableMap projection="geoAlbersUsa">
-                    <ZoomableGroup center={center} zoom={zoom}>
-                        <Geographies geography={geoUrl}>
-                            {({ geographies }) =>
-                                geographies
-                                    .filter((geo) => geo.id && geo.id.startsWith(stateFips))
-                                    .map((geo) => (
-                                        <Tooltip key={geo.rsmKey} content={geo.properties.name}>
-                                            <Geography
-                                                geography={geo}
-                                                stroke="#FFFFFF"
-                                                strokeWidth={0.2}
-                                                style={{
-                                                    default: { fill: "#3B82F6", outline: "none" },
-                                                    hover: { fill: "#1E40AF", outline: "none" },
-                                                    pressed: { fill: "#E42", outline: "none" },
-                                                }}
-                                            />
-                                        </Tooltip>
-                                    ))
-                            }
-                        </Geographies>
-                    </ZoomableGroup>
-                </ComposableMap>
-            </div>
-
-            <div className="flex gap-6 mt-6">
-                <div className="w-[400px] bg-white shadow-md rounded-lg p-4">
-                    <h3 className="text-lg font-semibold">🚗 Vehicle Usage Summary</h3>
-                    {vehicleError ? (
-                        <p className="text-red-500">Error loading vehicle data</p>
-                    ) : !vehicleData ? (
-                        <p>Loading vehicle data...</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-gray-50 rounded-lg p-4 min-h-[600px]">
+                    {isLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+                                <p className="text-gray-600">Loading map data...</p>
+                            </div>
+                        </div>
                     ) : (
-                        <ul className="list-disc pl-6 mt-2">
-                            {vehicleData.map((vehicle: any, index: number) => (
-                                <li key={index} className="mb-1">
-                                    {vehicle.brand}: {vehicle.rides} rides ({vehicle.vehicles} unique vehicles)
-                                </li>
-                            ))}
-                        </ul>
+                        <ComposableMap className="w-full h-full" projection="geoAlbersUsa">
+                            <ZoomableGroup center={center} zoom={zoom}>
+                                <Geographies geography={geoUrl}>
+                                    {({ geographies }) =>
+                                        geographies
+                                            .filter((geo) => geo.id && geo.id.startsWith(stateFips))
+                                            .map((geo) => (
+                                                <Tooltip 
+                                                    key={geo.rsmKey} 
+                                                    closeDelay={0}
+                                                    content={geo.properties.name}
+                                                    delay={0}
+                                                    placement="top"
+                                                >
+                                                    <Geography
+                                                        geography={geo}
+                                                        stroke="#FFFFFF"
+                                                        strokeWidth={0.2}
+                                                        style={{
+                                                            default: { fill: "#3B82F6", outline: "none" },
+                                                            hover: { fill: "#1E40AF", outline: "none", cursor: "pointer" },
+                                                            pressed: { fill: "#2563EB", outline: "none" },
+                                                        }}
+                                                    />
+                                                </Tooltip>
+                                            ))
+                                    }
+                                </Geographies>
+                            </ZoomableGroup>
+                        </ComposableMap>
                     )}
                 </div>
 
-                <div className="w-[400px] bg-white shadow-md rounded-lg p-4">
-                    <h3 className="text-lg font-semibold">🔧 Most Used Accessories</h3>
-                    {accessoryError ? (
-                        <p className="text-red-500">Error loading accessory data</p>
-                    ) : !accessoryData ? (
-                        <p>Loading accessory data...</p>
-                    ) : (
-                        <ul className="list-disc pl-6 mt-2">
-                            {accessoryData.map((accessory: any, index: number) => (
-                                <li key={index} className="mb-1">
-                                    {accessory.property_name}: {accessory.usage_count} uses
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                <div className="space-y-6">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">🚗 Vehicle Summary</h3>
+                        {isLoading ? (
+                            <div className="flex items-center justify-center h-40">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                            </div>
+                        ) : !vehicleData ? (
+                            <p className="text-gray-600 text-center py-4">No vehicle data available</p>
+                        ) : (
+                            <ul className="space-y-2">
+                                {vehicleData.map((vehicle: any, index: number) => (
+                                    <li key={index} className="flex items-center gap-2 text-gray-700">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                        <span className="font-medium">{vehicle.brand}:</span>
+                                        <span>{vehicle.rides} rides ({vehicle.vehicles} vehicles)</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">🔧 Accessories Overview</h3>
+                        {isLoading ? (
+                            <div className="flex items-center justify-center h-40">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                            </div>
+                        ) : !accessoryData ? (
+                            <p className="text-gray-600 text-center py-4">No accessory data available</p>
+                        ) : (
+                            <ul className="space-y-2">
+                                {accessoryData.map((accessory: any, index: number) => (
+                                    <li key={index} className="flex items-center gap-2 text-gray-700">
+                                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                        <span className="font-medium">{accessory.property_name}:</span>
+                                        <span>{accessory.usage_count} uses</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 </div>
             </div>
-
-            <button
-                className="mt-8 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() => router.push(`/state/${state}`)}
-            >
-                View Detailed Data for {state}
-            </button>
         </div>
     );
 }
