@@ -1,356 +1,640 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
-    Table,
-    TableHeader,
-    TableColumn,
-    TableBody,
-    TableRow,
-    TableCell,
-    Card,
-    CardBody,
-    Pagination,
-    Dropdown,
-    DropdownTrigger,
-    DropdownMenu,
-    DropdownItem,
-    Button,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Card,
+  CardBody,
+  Pagination,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Button,
+  Input,
+  SortDescriptor,
 } from "@heroui/react";
-
 import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions } from "chart.js";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartOptions,
+} from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+// ------------ fetch helper ------------
 const fetcher = async (page: number, pageSize: number) => {
-    const params = new URLSearchParams({
-        page: String(page),
-        page_size: String(pageSize),
-    });
-    const res = await fetch(`http://localhost:8080/api/rides?${params.toString()}`);
-    return res.json();
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  const res = await fetch(`http://localhost:8080/api/rides?${params.toString()}`);
+  return res.json();
 };
 
-// We'll define a shape for the server response
 interface RidesResponse {
-    Rows: any[];
-    TotalCount: number;
-    Page: number;
-    PageSize: number;
+  Rows: any[];
+  TotalCount: number;
 }
 
-// Table columns
+interface RideRow {
+  ride_id: number;
+  state: string;
+  vehicle_id: string;
+  brand: string;
+  customer_id: number;
+  event_timestamp: string;
+  property_values: any;
+}
+
 const columns = [
-    { name: "Ride ID", uid: "ride_id" },
-    { name: "State", uid: "state" },
-    { name: "Vehicle ID", uid: "vehicle_id" },
-    { name: "Brand", uid: "brand" },
-    { name: "Customer ID", uid: "customer_id" },
-    { name: "Timestamp", uid: "event_timestamp" },
+  { name: "Ride ID", uid: "ride_id", sortable: true },
+  { name: "State", uid: "state", sortable: true },
+  { name: "Vehicle ID", uid: "vehicle_id", sortable: true },
+  { name: "Brand", uid: "brand", sortable: true },
+  { name: "Customer ID", uid: "customer_id", sortable: true },
+  { name: "Timestamp", uid: "event_timestamp", sortable: true },
+  { name: "Props (JSON)", uid: "property_values" },
 ];
 
-export default function OurData() {
-    // --------------- Local States ---------------
-    // We'll keep all loaded rides in `allRides`.
-    const [allRides, setAllRides] = useState<any[]>([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(10000); // or user picks
-    const [totalCount, setTotalCount] = useState(0);
+/*
+  DataContent supports:
+  - Loading more rides.
+  - Filtering and searching.
+  - Grouping by one of: "none", "brand", "vehicle_id", "customer_id", or "ride_id".
+  - Two-level grouping: within each aggregated group, rides are regrouped by ride_id.
+  - Expanding a group shows the unique ride id rows; expanding a ride row shows all rows related to that ride id.
+  - Pagination is added for both the detailed view and the aggregated view.
+  - The aggregated table header sorts like the non-grouped table.
+  - The unique ride rows in the aggregated table are now clickable.
+*/
+function DataContent() {
+  // ---------- Load More / Fetch State ----------
+  const [allRides, setAllRides] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10000;
+  const [totalCount, setTotalCount] = useState(0);
 
-    // Client-side filter states
-    const [selectedState, setSelectedState] = useState<string | null>(null);
-    const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
-    const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
-    const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-
-    // --------------- Phase 1: Load data in pages ---------------
-    // We'll do a "Load More" approach.
-    // As soon as the user hits the page, we fetch the first page.
-    useEffect(() => {
-        loadPage(currentPage);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage]);
-
-    async function loadPage(page: number) {
-        const data: RidesResponse = await fetcher(page, pageSize);
-        // Append new Rows to allRides
-        setAllRides((prev) => [...prev, ...data.Rows]);
-        setTotalCount(data.TotalCount);
-    }
-
-    // If you'd prefer infinite scroll, you'd detect user scroll position
-    // and call `setCurrentPage(old => old + 1)` automatically.
-
-    // --------------- Phase 2: Client-Side Filtering ---------------
-    // We apply filters to `allRides`
-    const filteredRides = useMemo(() => {
-        return allRides.filter((ride) => {
-            // State filter
-            if (selectedState && ride.state !== selectedState) return false;
-            // Vehicle filter
-            if (selectedVehicle && ride.vehicle_id !== selectedVehicle) return false;
-            // Customer filter
-            if (selectedCustomer && ride.customer_id !== selectedCustomer) return false;
-            // Brand filter
-            if (selectedBrand && ride.brand !== selectedBrand) return false;
-            return true;
+  const loadPage = useCallback(
+    async (page: number) => {
+      const data: RidesResponse = await fetcher(page, pageSize);
+      setTotalCount(data.TotalCount);
+      if (page === 1) {
+        setAllRides(data.Rows);
+      } else {
+        setAllRides((prev) => {
+          const seen = new Set(
+            prev.map(
+              (r) =>
+                `${r.ride_id}-${r.event_timestamp}-${JSON.stringify(r.property_values)}`
+            )
+          );
+          const unique = data.Rows.filter(
+            (r) =>
+              !seen.has(
+                `${r.ride_id}-${r.event_timestamp}-${JSON.stringify(r.property_values)}`
+              )
+          );
+          return [...prev, ...unique];
         });
-    }, [allRides, selectedState, selectedVehicle, selectedCustomer, selectedBrand]);
+      }
+    },
+    [pageSize]
+  );
 
-    // --------------- Local Pagination for the filtered results ---------------
-    // We might do a simple table pagination inside HeroUI.
-    // Or we can do infinite scroll. Let's do a local "page" for the table too.
-    const [localPage, setLocalPage] = useState(1);
-    const [localRowsPerPage, setLocalRowsPerPage] = useState(10);
+  useEffect(() => {
+    loadPage(currentPage);
+  }, [currentPage, loadPage]);
 
-    const totalFiltered = filteredRides.length;
-    const totalLocalPages = Math.ceil(totalFiltered / localRowsPerPage);
-    const startIndex = (localPage - 1) * localRowsPerPage;
-    const pageRides = useMemo(() => {
-        return filteredRides.slice(startIndex, startIndex + localRowsPerPage);
-    }, [filteredRides, startIndex, localRowsPerPage]);
+  const totalServerPages = Math.ceil(totalCount / pageSize);
+  const canLoadMore = currentPage < totalServerPages;
 
-    // --------------- Chart (client-side) ---------------
-    // Suppose we want a brand usage chart from the filtered rides
-    // We'll group them by brand:
-    const brandCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        for (const r of filteredRides) {
-            counts[r.brand] = (counts[r.brand] || 0) + 1;
-        }
-        return Object.entries(counts).map(([brand, cnt]) => ({ brand, rides: cnt }));
-    }, [filteredRides]);
+  // ---------- Filters, Search and Sorting ----------
+  const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
+    column: "event_timestamp",
+    direction: "ascending",
+  });
 
-    const chartOptions: ChartOptions<"bar"> = {
-        responsive: true,
-        plugins: {
-            legend: { position: "top" },
-            title: { display: true, text: "Vehicle Usage (Client-Side Filtered)" },
-        },
-    };
-    const chartData = {
-        labels: brandCounts.map((b) => b.brand),
-        datasets: [
-            {
-                label: "Total Rides",
-                data: brandCounts.map((b) => b.rides),
-            },
-        ],
-    };
+  const filteredRides = useMemo(() => {
+    const lower = searchTerm.trim().toLowerCase();
+    return allRides.filter((r) => {
+      if (selectedState && r.state !== selectedState) return false;
+      if (selectedBrand && r.brand !== selectedBrand) return false;
+      if (!lower) return true;
+      const haystack =
+        String(r.ride_id).toLowerCase() +
+        r.state.toLowerCase() +
+        r.vehicle_id.toLowerCase() +
+        r.brand.toLowerCase() +
+        String(r.customer_id).toLowerCase() +
+        new Date(r.event_timestamp).toLocaleString().toLowerCase() +
+        JSON.stringify(r.property_values).toLowerCase();
+      return haystack.includes(lower);
+    });
+  }, [allRides, selectedState, selectedBrand, searchTerm]);
 
-    // --------------- Render Cell Helper ---------------
-    function renderCell(ride: any, columnKey: React.Key) {
-        switch (columnKey) {
-            case "ride_id":
-                return ride.ride_id;
-            case "state":
-                return ride.state;
-            case "vehicle_id":
-                return ride.vehicle_id;
-            case "brand":
-                return ride.brand;
-            case "customer_id":
-                return ride.customer_id;
-            case "event_timestamp":
-                return new Date(ride.event_timestamp).toLocaleString();
-            default:
-                return null;
-        }
+  const sortedRides = useMemo(() => {
+    const { column, direction } = sortDescriptor;
+    const arr = [...filteredRides];
+    arr.sort((a, b) => {
+      let valA = a[column];
+      let valB = b[column];
+      if (column === "event_timestamp") {
+        valA = new Date(a.event_timestamp).getTime();
+        valB = new Date(b.event_timestamp).getTime();
+      }
+      const cmp =
+        typeof valA === "number" && typeof valB === "number"
+          ? valA - valB
+          : String(valA).localeCompare(String(valB));
+      return direction === "ascending" ? cmp : -cmp;
+    });
+    return arr;
+  }, [filteredRides, sortDescriptor]);
+
+  // ---------- Local Pagination for Detailed (Non-grouped) View ----------
+  const [localPage, setLocalPage] = useState(1);
+  const [localRowsPerPage, setLocalRowsPerPage] = useState(10);
+  const totalLocalPages = Math.ceil(sortedRides.length / localRowsPerPage);
+  const pageRides = useMemo(() => {
+    const start = (localPage - 1) * localRowsPerPage;
+    return sortedRides.slice(start, start + localRowsPerPage);
+  }, [sortedRides, localPage, localRowsPerPage]);
+
+  // ---------- Grouping / Aggregation ----------
+  // groupBy: "none", "brand", "vehicle_id", "customer_id", or "ride_id"
+  const [groupBy, setGroupBy] = useState<string>("none");
+  // Reset aggregated groups page when groupBy changes.
+  const [groupPage, setGroupPage] = useState(1);
+  useEffect(() => {
+    setGroupPage(1);
+  }, [groupBy]);
+  // expandedGroups tracks which aggregated groups (by group key) are expanded.
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  // expandedRides tracks which ride id groups (within a group) are expanded.
+  const [expandedRides, setExpandedRides] = useState<Set<string>>(new Set());
+
+  // Helper: toggle expansion of a ride (unique ride id) within a group.
+  const toggleRide = (rideKey: string) => {
+    setExpandedRides((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(rideKey)) {
+        newSet.delete(rideKey);
+      } else {
+        newSet.add(rideKey);
+      }
+      return newSet;
+    });
+  };
+
+  // Build two-level aggregated groups:
+  //  - Top level groups by the groupBy field.
+  //  - Within each top-level group, group rides by ride_id.
+  const aggregatedGroups = useMemo(() => {
+    if (groupBy === "none") return null;
+    const groups: Record<string, RideRow[]> = {};
+    for (const r of sortedRides) {
+      const key = String(r[groupBy]);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(r);
     }
+    return Object.entries(groups).map(([groupKey, rides]) => {
+      const rideGroups: { rideId: number; rides: RideRow[] }[] = [];
+      const rideMap = new Map<number, RideRow[]>();
+      for (const ride of rides) {
+        if (rideMap.has(ride.ride_id)) {
+          rideMap.get(ride.ride_id)!.push(ride);
+        } else {
+          rideMap.set(ride.ride_id, [ride]);
+        }
+      }
+      for (const [rideId, rideList] of rideMap.entries()) {
+        rideGroups.push({ rideId, rides: rideList });
+      }
+      rideGroups.sort((a, b) => a.rideId - b.rideId);
+      return {
+        group: groupKey,
+        rideGroups,
+        count: rideGroups.length,
+      };
+    });
+  }, [groupBy, sortedRides]);
 
-    // --------------- Single Selection Helper for HeroUI <Dropdown> ---------------
-    function singleSelection(value: string | null) {
-        return value ? new Set([value]) : new Set([""]);
+  // ---------- Aggregated Groups Pagination ----------
+  const [groupRowsPerPage, setGroupRowsPerPage] = useState(10);
+  const totalGroupPages = aggregatedGroups ? Math.ceil(aggregatedGroups.length / groupRowsPerPage) : 1;
+  const pageAggregatedGroups = useMemo(() => {
+    return aggregatedGroups
+      ? aggregatedGroups.slice((groupPage - 1) * groupRowsPerPage, groupPage * groupRowsPerPage)
+      : [];
+  }, [aggregatedGroups, groupPage, groupRowsPerPage]);
+
+  // ---------- Aggregated Header Sorting for Grouped Table ----------
+  // Define aggregated columns similarly to the non-grouped table.
+  const aggregatedColumns = useMemo(() => {
+    if (!groupBy || groupBy === "none") return [];
+    return [
+      { name: groupBy.charAt(0).toUpperCase() + groupBy.slice(1), uid: "group", sortable: true },
+      { name: "Count", uid: "count", sortable: true },
+    ];
+  }, [groupBy]);
+
+  const [aggregatedSortDescriptor, setAggregatedSortDescriptor] = useState<SortDescriptor>({
+    column: "group",
+    direction: "ascending",
+  });
+
+  const sortedAggregatedGroups = useMemo(() => {
+    if (!aggregatedGroups) return [];
+    const { column, direction } = aggregatedSortDescriptor;
+    return [...aggregatedGroups].sort((a, b) => {
+      let valA: any, valB: any;
+      if (column === "group") {
+        valA = a.group;
+        valB = b.group;
+      } else if (column === "count") {
+        valA = a.count;
+        valB = b.count;
+      } else {
+        valA = a.group;
+        valB = b.group;
+      }
+      const cmp =
+        typeof valA === "number" && typeof valB === "number" ? valA - valB : String(valA).localeCompare(String(valB));
+      return direction === "ascending" ? cmp : -cmp;
+    });
+  }, [aggregatedGroups, aggregatedSortDescriptor]);
+
+  const sortedPageAggregatedGroups = useMemo(() => {
+    return sortedAggregatedGroups.slice((groupPage - 1) * groupRowsPerPage, groupPage * groupRowsPerPage);
+  }, [sortedAggregatedGroups, groupPage, groupRowsPerPage]);
+
+  // ---------- Dropdown Data ----------
+  const distinctStates = [...new Set(allRides.map((r) => r.state))];
+  const distinctBrands = [...new Set(allRides.map((r) => r.brand))];
+  const singleSel = (v: string | null) => (v ? new Set([v]) : new Set([""]));
+
+  // ---------- Chart Data: Unique Ride Counts per Brand ----------
+  const uniqueRides = useMemo(() => {
+    const rideMap = new Map<number, RideRow>();
+    for (const r of sortedRides) {
+      if (!rideMap.has(r.ride_id)) {
+        rideMap.set(r.ride_id, r);
+      }
     }
+    return Array.from(rideMap.values());
+  }, [sortedRides]);
 
-    // We can glean the distinct states, vehicles, etc. from `allRides` if we want client-only:
-    const distinctStates = Array.from(new Set(allRides.map((r) => r.state)));
-    const distinctVehicles = Array.from(new Set(allRides.map((r) => r.vehicle_id)));
-    const distinctCustomers = Array.from(new Set(allRides.map((r) => r.customer_id)));
-    const distinctBrands = Array.from(new Set(allRides.map((r) => r.brand)));
+  const brandCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const r of uniqueRides) {
+      map[r.brand] = (map[r.brand] || 0) + 1;
+    }
+    return Object.entries(map).map(([brand, count]) => ({ brand, count }));
+  }, [uniqueRides]);
 
-    // --------------- HeroUI top content: filters ---------------
-    const topContent = (
-        <div className="flex flex-wrap gap-2 w-full">
-            {/* State Filter */}
-            <Dropdown>
-                <DropdownTrigger>
-                    <Button variant="flat" size="sm">
-                        {selectedState ?? "Filter by State"}
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                    aria-label="Select State"
-                    selectionMode="single"
-                    selectedKeys={singleSelection(selectedState)}
-                    onSelectionChange={(keys) => {
-                        const val = keys.values().next().value;
-                        setSelectedState(val === "" ? null : val);
-                        setLocalPage(1);
-                    }}
-                >
-                    <DropdownItem key="">All States</DropdownItem>
-                    {distinctStates.map((s) => (
-                        <DropdownItem key={s}>{s}</DropdownItem>
-                    ))}
-                </DropdownMenu>
-            </Dropdown>
+  const chartData = {
+    labels: brandCounts.map((b) => b.brand),
+    datasets: [{ label: "Unique Rides", data: brandCounts.map((b) => b.count) }],
+  };
 
-            {/* Vehicle Filter */}
-            {/* <Dropdown>
-                <DropdownTrigger>
-                    <Button variant="flat" size="sm">
-                        {selectedVehicle ?? "Filter by Vehicle"}
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                    aria-label="Select Vehicle"
-                    selectionMode="single"
-                    selectedKeys={singleSelection(selectedVehicle)}
-                    onSelectionChange={(keys) => {
-                        const val = keys.values().next().value;
-                        setSelectedVehicle(val === "" ? null : val);
-                        setLocalPage(1);
-                    }}
-                >
-                    <DropdownItem key="">All Vehicles</DropdownItem>
-                    {distinctVehicles.map((v) => (
-                        <DropdownItem key={v}>{v}</DropdownItem>
-                    ))}
-                </DropdownMenu>
-            </Dropdown> */}
+  const chartOptions: ChartOptions<"bar"> = {
+    responsive: true,
+    plugins: { legend: { position: "top" }, title: { display: true, text: "Brand Usage" } },
+  };
 
-            {/* Customer Filter */}
-            {/* <Dropdown>
-                <DropdownTrigger>
-                    <Button variant="flat" size="sm">
-                        {selectedCustomer ?? "Filter by Customer"}
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                    aria-label="Select Customer"
-                    selectionMode="single"
-                    selectedKeys={singleSelection(selectedCustomer)}
-                    onSelectionChange={(keys) => {
-                        const val = keys.values().next().value;
-                        setSelectedCustomer(val === "" ? null : val);
-                        setLocalPage(1);
-                    }}
-                >
-                    <DropdownItem key="">All Customers</DropdownItem>
-                    {distinctCustomers.map((c) => (
-                        <DropdownItem key={c}>{c}</DropdownItem>
-                    ))}
-                </DropdownMenu>
-            </Dropdown> */}
+  // ---------- Selection for Detailed (Non-grouped) View ----------
+  const [selectedKeys, setSelectedKeys] = useState<Set<React.Key>>(new Set());
 
-            {/* Brand Filter */}
-            <Dropdown>
-                <DropdownTrigger>
-                    <Button variant="flat" size="sm">
-                        {selectedBrand ?? "Filter by Brand"}
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                    aria-label="Select Brand"
-                    selectionMode="single"
-                    selectedKeys={singleSelection(selectedBrand)}
-                    onSelectionChange={(keys) => {
-                        const val = keys.values().next().value;
-                        setSelectedBrand(val === "" ? null : val);
-                        setLocalPage(1);
-                    }}
-                >
-                    <DropdownItem key="">All Brands</DropdownItem>
-                    {distinctBrands.map((b) => (
-                        <DropdownItem key={b}>{b}</DropdownItem>
-                    ))}
-                </DropdownMenu>
-            </Dropdown>
+  // ---------- Cell Renderer for Detailed Table ----------
+  const cell = (r: RideRow, key: React.Key) => {
+    if (key === "event_timestamp") return new Date(r.event_timestamp).toLocaleString();
+    if (key === "property_values") return JSON.stringify(r.property_values);
+    return r[key as keyof RideRow];
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-3xl font-bold text-center mb-6">Our Data Dashboard</h1>
+
+      {/* Load More Bar */}
+      <div className="flex justify-between items-center mb-4">
+        <span className="text-sm text-gray-600">
+          Loaded {allRides.length} / {totalCount}
+        </span>
+        {canLoadMore && (
+          <Button size="sm" onPress={() => setCurrentPage((p) => p + 1)}>
+            Load More
+          </Button>
+        )}
+      </div>
+
+      {/* Top Controls: Search, Filters, and Group By */}
+      <div className="flex flex-wrap gap-2 justify-between items-center mb-4">
+        <div className="flex flex-wrap gap-2">
+          <Input
+            placeholder="Search..."
+            variant="bordered"
+            isClearable
+            value={searchTerm}
+            onClear={() => setSearchTerm("")}
+            onValueChange={(val) => {
+              setSearchTerm(val || "");
+              setLocalPage(1);
+            }}
+            className="max-w-[200px]"
+          />
+
+          {/* State dropdown */}
+          <Dropdown>
+            <DropdownTrigger>
+              <Button size="sm" variant="flat">
+                {selectedState ?? "State"}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              selectionMode="single"
+              selectedKeys={singleSel(selectedState)}
+              onSelectionChange={(k) => {
+                const v = k.values().next().value;
+                setSelectedState(v === "" ? null : v);
+                setLocalPage(1);
+              }}
+            >
+              <DropdownItem key="">All</DropdownItem>
+              {distinctStates.map((s) => (
+                <DropdownItem key={s}>{s}</DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+
+          {/* Brand dropdown */}
+          <Dropdown>
+            <DropdownTrigger>
+              <Button size="sm" variant="flat">
+                {selectedBrand ?? "Brand"}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              selectionMode="single"
+              selectedKeys={singleSel(selectedBrand)}
+              onSelectionChange={(k) => {
+                const v = k.values().next().value;
+                setSelectedBrand(v === "" ? null : v);
+                setLocalPage(1);
+              }}
+            >
+              <DropdownItem key="">All</DropdownItem>
+              {distinctBrands.map((b) => (
+                <DropdownItem key={b}>{b}</DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
         </div>
-    );
 
-    // --------------- Local pagination bottom content ---------------
-    const bottomContent = (
-        <div className="flex justify-between items-center w-full py-2 mt-2">
-            <div className="flex items-center gap-2">
-                <span className="text-default-400 text-sm">Rows per page:</span>
-                <select
-                    className="bg-transparent outline-none text-default-500 text-sm"
-                    value={localRowsPerPage}
-                    onChange={(e) => {
+        {/* Group By dropdown */}
+        <Dropdown>
+          <DropdownTrigger>
+            <Button size="sm" variant="flat">
+              Group By: {groupBy !== "none" ? groupBy : "None"}
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu
+            selectionMode="single"
+            selectedKeys={new Set([groupBy])}
+            onSelectionChange={(k) => {
+              // Use nullish coalescing to force a string; if undefined, fallback to "none"
+              const selected = k.values().next().value ?? "none";
+              setGroupBy(selected);
+            }}
+          >
+            <DropdownItem key="none">None</DropdownItem>
+            <DropdownItem key="brand">Brand</DropdownItem>
+            <DropdownItem key="vehicle_id">Vehicle ID</DropdownItem>
+            <DropdownItem key="customer_id">Customer ID</DropdownItem>
+            <DropdownItem key="ride_id">Ride ID</DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+      </div>
+
+      {/* Render Detailed Table OR Aggregated (Grouped) Table */}
+      {groupBy === "none" ? (
+        // Detailed Table View with Pagination and Row Selection
+        <Card>
+          <CardBody>
+            <Table
+              aria-label="Rides table"
+              sortDescriptor={sortDescriptor}
+              onSortChange={setSortDescriptor}
+              selectionMode="multiple"
+              selectionBehavior="checkbox"
+              selectedKeys={selectedKeys}
+              onSelectionChange={setSelectedKeys}
+              topContentPlacement="outside"
+              bottomContent={
+                <div className="flex justify-between items-center py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-default-400">Rows per page:</span>
+                    <select
+                      className="bg-transparent outline-none text-sm"
+                      value={localRowsPerPage}
+                      onChange={(e) => {
                         setLocalRowsPerPage(Number(e.target.value));
                         setLocalPage(1);
-                    }}
-                >
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="15">15</option>
-                    <option value="20">20</option>
-                </select>
-            </div>
-            <Pagination page={localPage} total={totalLocalPages} showControls onChange={(newPage) => setLocalPage(newPage)} />
-        </div>
-    );
-
-    // --------------- "Load More" button logic ---------------
-    // If we haven't loaded all pages from the server yet, let user load more.
-    const totalServerPages = Math.ceil(totalCount / pageSize);
-    const canLoadMore = currentPage < totalServerPages;
-
-    // --------------- Render ---------------
-    return (
-        <div className="our-data-container flex">
-            {/* Your sidebar */}
-            {/* <Sidebar /> */}
-            <div className="main-content p-6 flex-grow">
-                <h1 className="text-3xl font-bold mb-6 text-center">Our Data Dashboard</h1>
-
-                {/* Remote Pagination UI */}
-                <div className="flex justify-between items-center mb-4">
-                    <div className="text-sm text-gray-600">
-                        Fetched {allRides.length} / {totalCount} total rides
-                    </div>
-                    {canLoadMore && (
-                        <Button variant="flat" size="sm" onPress={() => setCurrentPage((old) => old + 1)}>
-                            Load More
-                        </Button>
-                    )}
+                      }}
+                    >
+                      {[5, 10, 15, 20].map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Pagination page={localPage} total={totalLocalPages} onChange={setLocalPage} showControls />
                 </div>
-
-                {/* Table with local filtering + local pagination */}
-                <Card>
-                    <CardBody>
-                        <Table
-                            aria-label="All Rides (Client-Side Filtered)"
-                            topContent={topContent}
-                            topContentPlacement="outside"
-                            bottomContent={bottomContent}
-                            bottomContentPlacement="outside"
-                        >
-                            <TableHeader columns={columns}>{(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}</TableHeader>
-                            <TableBody items={pageRides} emptyContent="No rides found">
-                                {(item: any) => (
-                                    <TableRow key={`ride-${item.ride_id}-${item.event_timestamp}`}>
-                                        {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardBody>
-                </Card>
-
-                {/* Example chart (from local filtered data) */}
-                {filteredRides.length > 0 && (
-                    <Card className="mt-8">
-                        <CardBody>
-                            <h2 className="text-xl font-semibold mb-4">Brand Usage</h2>
-                            <Bar data={chartData} options={chartOptions} />
-                        </CardBody>
-                    </Card>
+              }
+              bottomContentPlacement="outside"
+            >
+              <TableHeader columns={columns}>
+                {(c) => (
+                  <TableColumn key={c.uid} allowsSorting={c.sortable}>
+                    {c.name}
+                  </TableColumn>
                 )}
+              </TableHeader>
+              <TableBody emptyContent="No rides">
+                {pageRides.map((item) => (
+                  <TableRow key={`${item.ride_id}-${item.event_timestamp}-${JSON.stringify(item.property_values)}`}>
+                    {columns.map((col) => (
+                      <TableCell key={col.uid}>{cell(item, col.uid)}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
+      ) : aggregatedGroups ? (
+        // Aggregated/Grouped Table with Nested Expansion for Unique Rides and Their Details
+        <Card>
+          <CardBody>
+            <Table
+              aria-label="Aggregated Rides table"
+              sortDescriptor={aggregatedSortDescriptor}
+              onSortChange={setAggregatedSortDescriptor}
+            >
+              <TableHeader columns={aggregatedColumns}>
+                {(c) => (
+                  <TableColumn key={c.uid} allowsSorting={c.sortable}>
+                    {c.name}
+                  </TableColumn>
+                )}
+              </TableHeader>
+              <TableBody emptyContent="No rides">
+                {sortedPageAggregatedGroups.map((groupItem) => {
+                  const groupExpanded = expandedGroups.has(groupItem.group);
+                  return (
+                    <React.Fragment key={`group-${groupItem.group}`}>
+                      {/* Group Header Row */}
+                      <TableRow>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            onPress={() =>
+                              setExpandedGroups((prev) => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(groupItem.group)) {
+                                  newSet.delete(groupItem.group);
+                                } else {
+                                  newSet.add(groupItem.group);
+                                }
+                                return newSet;
+                              })
+                            }
+                          >
+                            {groupExpanded ? "–" : "+"}
+                          </Button>
+                          <span className="ml-2">{groupItem.group}</span>
+                        </TableCell>
+                        <TableCell>{groupItem.count}</TableCell>
+                      </TableRow>
+                      {groupExpanded &&
+                        // Render a row for each ride group (unique ride id) within the aggregated group.
+                        groupItem.rideGroups.map((rideGroup) => {
+                          const rideKey = `${groupItem.group}-${rideGroup.rideId}`;
+                          const rideExpanded = expandedRides.has(rideKey);
+                          const rep = rideGroup.rides[0];
+                          return (
+                            <React.Fragment key={rideKey}>
+                              {/* Ride Summary Row; make the entire row clickable */}
+                              <TableRow
+                                onClick={() => toggleRide(rideKey)}
+                                style={{ cursor: "pointer" }}
+                              >
+                                <TableCell>
+                                  <Button
+                                    size="xs"
+                                    onPress={(e) => {
+                                      e.stopPropagation();
+                                      toggleRide(rideKey);
+                                    }}
+                                  >
+                                    {rideExpanded ? "–" : "+"}
+                                  </Button>{" "}
+                                  <span className="ml-2">
+                                    Ride ID: {rep.ride_id} | Brand: {rep.brand} | Vehicle:{" "}
+                                    {rep.vehicle_id} | Customer: {rep.customer_id}
+                                  </span>
+                                </TableCell>
+                                <TableCell>{/* Empty cell for structure */}</TableCell>
+                              </TableRow>
+                              {rideExpanded &&
+                                // List all rows for this ride id.
+                                rideGroup.rides.map((r, idx) => (
+                                  <TableRow key={`ride-${rideKey}-details-${idx}`}>
+                                    <TableCell>
+                                      <div className="pl-4">
+                                        <p>
+                                          <strong>State:</strong> {r.state}
+                                        </p>
+                                        <p>
+                                          <strong>Timestamp:</strong> {new Date(r.event_timestamp).toLocaleString()}
+                                        </p>
+                                        <p>
+                                          <strong>Props:</strong> {JSON.stringify(r.property_values)}
+                                        </p>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>{/* Empty cell */}</TableCell>
+                                  </TableRow>
+                                ))}
+                            </React.Fragment>
+                          );
+                        })}
+                    </React.Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            {/* Aggregated Groups Pagination Controls */}
+            <div className="flex justify-between items-center py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-default-400">Groups per page:</span>
+                <select
+                  className="bg-transparent outline-none text-sm"
+                  value={groupRowsPerPage}
+                  onChange={(e) => {
+                    setGroupRowsPerPage(Number(e.target.value));
+                    setGroupPage(1);
+                  }}
+                >
+                  {[5, 10, 15, 20].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Pagination page={groupPage} total={totalGroupPages} onChange={setGroupPage} showControls />
             </div>
-        </div>
-    );
+          </CardBody>
+        </Card>
+      ) : null}
+
+      {/* Chart Section (Unchanged) */}
+      {sortedRides.length > 0 && (
+        <Card className="mt-8">
+          <CardBody>
+            <Bar data={chartData} options={chartOptions} />
+          </CardBody>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/*
+  OurDataWrapper delays rendering DataContent until after mounting
+  so that hook order remains consistent and hydration errors are avoided.
+*/
+export default function OurDataWrapper() {
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+  if (!hasMounted) {
+    return null;
+  }
+  return <DataContent />;
 }

@@ -1,15 +1,15 @@
 package main
 
 import (
-    "database/sql"
-    "encoding/json"
-    "fmt"
-    "log"
-    "net/http"
-    "os"
-    "strconv"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
 
-    _ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // Global DB handle
@@ -242,24 +242,23 @@ func getRideDetails(w http.ResponseWriter, r *http.Request) {
 
     // 4) Data query (with ORDER BY, LIMIT, OFFSET)
     dataQuery := `
-        SELECT 
-            r.ride_id, 
-            r.event_timestamp, 
-            c.state, 
-            v.brand, 
-            r.customer_id, 
-            r.vehicle_id
-        FROM fact_vehicle_ride r
-        JOIN dim_customer c ON r.customer_id = c.customer_id
-        JOIN dim_vehicle v ON r.vehicle_id = v.vehicle_id
+        SELECT
+            r.ride_id,
+            r.event_timestamp,
+            c.state,
+            v.brand,
+            r.customer_id,
+            r.vehicle_id,
+            r.property_values              -- NEW
+        FROM   fact_vehicle_ride r
+        JOIN   dim_customer c ON r.customer_id = c.customer_id
+        JOIN   dim_vehicle  v ON r.vehicle_id  = v.vehicle_id
     ` + baseWhere + `
         ORDER BY r.event_timestamp DESC
         LIMIT ? OFFSET ?
     `
 
-    // Extend params for limit & offset
-    dataParams := append([]interface{}{}, params...)
-    dataParams = append(dataParams, pageSize, offset)
+    dataParams := append(append([]interface{}{}, params...), pageSize, offset)
 
     rows, err := db.Query(dataQuery, dataParams...)
     if err != nil {
@@ -270,21 +269,35 @@ func getRideDetails(w http.ResponseWriter, r *http.Request) {
 
     // 5) Scan rows into struct
     type RideDetail struct {
-        RideID         int64  `json:"ride_id"`
-        EventTimestamp string `json:"event_timestamp"`
-        State          string `json:"state"`
-        Brand          string `json:"brand"`
-        CustomerID     int64  `json:"customer_id"`
-        VehicleID      string `json:"vehicle_id"`
+        RideID         int64           `json:"ride_id"`
+        EventTimestamp string          `json:"event_timestamp"`
+        State          string          `json:"state"`
+        Brand          string          `json:"brand"`
+        CustomerID     int64           `json:"customer_id"`
+        VehicleID      string          `json:"vehicle_id"`
+        PropertyValues json.RawMessage `json:"property_values"`
     }
+    
     var details []RideDetail
-
+    
     for rows.Next() {
         var rd RideDetail
-        if err := rows.Scan(&rd.RideID, &rd.EventTimestamp, &rd.State, &rd.Brand, &rd.CustomerID, &rd.VehicleID); err != nil {
+        var propStr string   // temp holder
+    
+        if err := rows.Scan(
+            &rd.RideID,
+            &rd.EventTimestamp,
+            &rd.State,
+            &rd.Brand,
+            &rd.CustomerID,
+            &rd.VehicleID,
+            &propStr,          // ← scan into string (or []byte)
+        ); err != nil {
             http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
             return
         }
+    
+        rd.PropertyValues = json.RawMessage(propStr) // wrap / cast
         details = append(details, rd)
     }
 
