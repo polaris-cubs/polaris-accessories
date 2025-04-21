@@ -11,7 +11,9 @@ const myDataSubNavItems = [
     { id: 'spreader', label: 'Spreader' },
     { id: 'winch', label: 'Winch' },
     { id: 'lightbar', label: 'Light Bar' },
-    { id: 'audio', label: 'Audio System' }
+    { id: 'audio', label: 'Audio System' },
+    { id: 'trailer', label: 'Trailer' },
+    { id: 'seasonal', label: 'Seasonal Analysis' }
 ];
 
 const stateSubNavItems = [
@@ -19,7 +21,8 @@ const stateSubNavItems = [
     { id: 'Minnesota', label: 'Minnesota' },
     { id: 'Illinois', label: 'Illinois' },
     { id: 'Indiana', label: 'Indiana' },
-    { id: 'Michigan', label: 'Michigan' }
+    { id: 'Michigan', label: 'Michigan' },
+    { id: 'comparison', label: 'State Comparison' }
 ];
 
 export default function Sidebar() {
@@ -49,7 +52,7 @@ export default function Sidebar() {
                 <Link 
                     key={`state-${item.id}`} 
                     className={pathname.includes(item.id) ? 'active' : ''}
-                    href={`/state/${item.id}/details`}
+                    href={item.id === 'comparison' ? `/state/${item.id}` : `/state/${item.id}/details`}
                 >
                     {item.label}
                 </Link>
