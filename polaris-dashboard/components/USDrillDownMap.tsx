@@ -4,7 +4,6 @@ import React from "react";
 import { ComposableMap, Geographies, Geography, Annotation, ZoomableGroup } from "react-simple-maps";
 import { Popover, PopoverTrigger, PopoverContent, Button } from "@heroui/react";
 import { geoCentroid } from "d3-geo";
-import { useRouter } from "next/navigation";
 
 const usGeoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 

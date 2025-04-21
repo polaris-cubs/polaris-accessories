@@ -210,8 +210,8 @@ export default function DetailedCountyMap({ stateName }: { stateName: string }) 
             </div>
 
             <button
-                onClick={() => router.push(`/state/${stateName}`)}
                 className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                onClick={() => router.push(`/state/${stateName}`)}
             >
                 View Detailed Data for {stateName}
             </button>

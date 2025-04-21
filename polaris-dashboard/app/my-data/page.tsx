@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions } from "chart.js";
+
 import Sidebar from "@/components/sidebar/sidebar";
 import "@/app/my-data/my-data.css";
 
@@ -40,6 +41,7 @@ export default function MyData() {
 
                 data.forEach((item: any) => {
                     const key = item.property_name;
+
                     if (usageMap[key]) {
                         usageMap[key] += item.usage_count;
                     } else {
