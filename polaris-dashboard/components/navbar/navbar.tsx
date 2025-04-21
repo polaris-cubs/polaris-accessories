@@ -11,7 +11,7 @@ import NextLink from "next/link";
 import { usePathname } from 'next/navigation';
 
 const mainNavItems = [
-    { id: 'home', path: '/', label: 'Home' },
+    { id: 'home', path: '/', label: 'US MAP' },
     { id: 'my-data', path: '/my-data', label: 'My Data' },
     { id: 'our-data', path: '/our-data', label: 'Our Data' },
     { id: 'settings', path: '/settings', label: 'Settings' }

@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
+import { Card, CardBody, CardHeader, Divider } from "@heroui/react";
 
 import DetailedCountyMap from "@/components/DetailedCountyMap";
 
@@ -13,8 +14,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function StateDetailsPage() {
-    const { stateName } = useParams();
-    const router = useRouter();
+    const { stateName } = useParams() as { stateName: string };
 
     const { data: vehicleData } = useSWR(
         `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(stateName)}`,
@@ -26,58 +26,89 @@ export default function StateDetailsPage() {
     );
 
     return (
-        <div className="flex flex-col items-center p-6">
-            <h1 className="text-3xl font-bold">{stateName} - Detailed County Map</h1>
+        <div className="flex flex-col items-center p-6 gap-6">
+            <Card className="w-full max-w-4xl">
+                <CardHeader className="flex gap-3">
+                    <div className="flex flex-col">
+                        <p className="text-2xl font-bold">{stateName} - Detailed County Map</p>
+                    </div>
+                </CardHeader>
+                <Divider />
+                <CardBody>
+                    <DetailedCountyMap stateName={stateName} />
+                </CardBody>
+            </Card>
 
-            <button
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() => router.back()}
-            >
-                Back to US Map
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+                <Card>
+                    <CardHeader className="flex gap-3">
+                        <div className="flex flex-col">
+                            <p className="text-xl font-semibold">🚗 Vehicle Data</p>
+                        </div>
+                    </CardHeader>
+                    <Divider />
+                    <CardBody>
+                        {vehicleData ? (
+                            <Bar
+                                data={{
+                                    labels: vehicleData.map((v: any) => v.brand),
+                                    datasets: [
+                                        {
+                                            label: "Total Rides",
+                                            data: vehicleData.map((v: any) => v.rides),
+                                            backgroundColor: "rgba(54, 162, 235, 0.6)",
+                                        },
+                                    ],
+                                }}
+                                options={{
+                                    responsive: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'top',
+                                        },
+                                    },
+                                }}
+                            />
+                        ) : (
+                            <p>Loading vehicle data...</p>
+                        )}
+                    </CardBody>
+                </Card>
 
-            <div className="mt-6">
-                <DetailedCountyMap stateName={stateName} />
-            </div>
-
-            <div className="mt-6 p-4 bg-white shadow-md rounded-lg w-full max-w-2xl">
-                <h2 className="text-xl font-semibold">📊 Vehicle Data</h2>
-                {vehicleData ? (
-                    <Bar
-                        data={{
-                            labels: vehicleData.map((v: any) => v.brand),
-                            datasets: [
-                                {
-                                    label: "Total Rides",
-                                    data: vehicleData.map((v: any) => v.rides),
-                                    backgroundColor: "rgba(54, 162, 235, 0.6)",
-                                },
-                            ],
-                        }}
-                    />
-                ) : (
-                    <p>Loading vehicle data...</p>
-                )}
-            </div>
-
-            <div className="mt-6 p-4 bg-white shadow-md rounded-lg w-full max-w-2xl">
-                <h2 className="text-xl font-semibold">📊 Accessory Usage</h2>
-                {accessoryData ? (
-                    <Bar
-                        data={{
-                            labels: accessoryData.map((a: any) => a.property_name),
-                            datasets: [
-                                {
-                                    label: "Usage Count",
-                                    data: accessoryData.map((a: any) => a.usage_count),
-                                    backgroundColor: "rgba(255, 99, 132, 0.6)",
-                                },
-                            ],
-                        }}
-                    />
-                ) : (
-                    <p>Loading accessory data...</p>
-                )}
+                <Card>
+                    <CardHeader className="flex gap-3">
+                        <div className="flex flex-col">
+                            <p className="text-xl font-semibold">🔧 Accessory Usage</p>
+                        </div>
+                    </CardHeader>
+                    <Divider />
+                    <CardBody>
+                        {accessoryData ? (
+                            <Bar
+                                data={{
+                                    labels: accessoryData.map((a: any) => a.property_name),
+                                    datasets: [
+                                        {
+                                            label: "Usage Count",
+                                            data: accessoryData.map((a: any) => a.usage_count),
+                                            backgroundColor: "rgba(255, 99, 132, 0.6)",
+                                        },
+                                    ],
+                                }}
+                                options={{
+                                    responsive: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'top',
+                                        },
+                                    },
+                                }}
+                            />
+                        ) : (
+                            <p>Loading accessory data...</p>
+                        )}
+                    </CardBody>
+                </Card>
             </div>
         </div>
     );

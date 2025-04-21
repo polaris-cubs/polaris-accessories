@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 
 import userIcon from "@/assets/User.png"; 
 
-const subNavItems = [
+const myDataSubNavItems = [
     { id: 'snowplow', label: 'Snowplow' },
     { id: 'spreader', label: 'Spreader' },
     { id: 'winch', label: 'Winch' },
@@ -14,15 +14,23 @@ const subNavItems = [
     { id: 'audio', label: 'Audio System' }
 ];
 
+const stateSubNavItems = [
+    { id: 'Wisconsin', label: 'Wisconsin' },
+    { id: 'Minnesota', label: 'Minnesota' },
+    { id: 'Illinois', label: 'Illinois' },
+    { id: 'Indiana', label: 'Indiana' },
+    { id: 'Michigan', label: 'Michigan' }
+];
+
 export default function Sidebar() {
     const pathname = usePathname();
-    const currentPath = pathname.split('/')[1] || 'home';
+    const currentPath = pathname.split('/')[1] || 'state';
     
-    // Convert path to title (e.g., 'my-data' -> 'My Data')
     const getPageTitle = (path: string) => {
         switch(path) {
-        case 'home':
-            return 'Home';
+        case '':
+        case 'state':
+            return 'US MAP';
         case 'my-data':
             return 'My Data';
         case 'our-data':
@@ -30,12 +38,46 @@ export default function Sidebar() {
         case 'settings':
             return 'Settings';
         default:
-            return 'Dashboard';
+            return 'US MAP';
         }
     };
 
-    // Only show sub-navigation for My Data and Our Data pages
-    const showSubNav = ['my-data'].includes(currentPath);
+    const renderSubNav = () => {
+        switch(currentPath) {
+        case 'state':
+            return stateSubNavItems.map(item => (
+                <Link 
+                    key={`state-${item.id}`} 
+                    className={pathname.includes(item.id) ? 'active' : ''}
+                    href={`/state/${item.id}/details`}
+                >
+                    {item.label}
+                </Link>
+            ));
+        case 'my-data':
+            return myDataSubNavItems.map(item => (
+                <Link 
+                    key={`my-data-${item.id}`} 
+                    className={pathname.includes(item.id) ? 'active' : ''}
+                    href={`/my-data/subpages/${item.id}`}
+                >
+                    {item.label}
+                </Link>
+            ));
+        case 'our-data':
+            return null;
+        default:
+            return stateSubNavItems.map(item => (
+                <Link 
+                    key={`state-${item.id}`} 
+                    className={pathname.includes(item.id) ? 'active' : ''}
+                    href={`/state/${item.id}/details`}
+                >
+                    {item.label}
+                </Link>
+            ));
+        }
+    };
 
     return (
         <div className="sidebar">
@@ -43,17 +85,8 @@ export default function Sidebar() {
             <div className="sidebar-title">{getPageTitle(currentPath)}</div>
             
             <nav className="nav">
-                {showSubNav && subNavItems.map(item => (
-                    <Link 
-                        key={`sidebar-${item.id}`} 
-                        className={pathname.includes(item.id) ? 'active' : ''}
-                        href={`/${currentPath}/subpages/${item.id}`}
-                    >
-                        {item.label}
-                    </Link>
-                ))}
-                <hr />
+                {renderSubNav()}
             </nav>
         </div>
     );
-}
+} 
