@@ -8,6 +8,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Card, CardBody, CardHeader, Divider } from "@heroui/react";
 
 import DetailedCountyMap from "@/components/DetailedCountyMap";
+import { filterNonAccessories } from "@/lib/utils";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -24,6 +25,9 @@ export default function StateDetailsPage() {
         `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(stateName)}`,
         fetcher
     );
+
+    // 액세서리 데이터 필터링 - API 응답이 있을 때만 실행
+    const filteredAccessories = accessoryData ? filterNonAccessories(accessoryData) : [];
 
     return (
         <div className="flex flex-col items-center p-6 gap-6">
@@ -86,11 +90,11 @@ export default function StateDetailsPage() {
                         {accessoryData ? (
                             <Bar
                                 data={{
-                                    labels: accessoryData.map((a: any) => a.property_name),
+                                    labels: filteredAccessories.map((a: any) => a.property_name),
                                     datasets: [
                                         {
                                             label: "Usage Count",
-                                            data: accessoryData.map((a: any) => a.usage_count),
+                                            data: filteredAccessories.map((a: any) => a.usage_count),
                                             backgroundColor: "rgba(255, 99, 132, 0.6)",
                                         },
                                     ],

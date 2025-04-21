@@ -6,14 +6,13 @@ import { usePathname } from 'next/navigation';
 
 import userIcon from "@/assets/User.png"; 
 
-const myDataSubNavItems = [
+const accessoriesSubNavItems = [
     { id: 'snowplow', label: 'Snowplow' },
     { id: 'spreader', label: 'Spreader' },
     { id: 'winch', label: 'Winch' },
     { id: 'lightbar', label: 'Light Bar' },
     { id: 'audio', label: 'Audio System' },
-    { id: 'trailer', label: 'Trailer' },
-    { id: 'seasonal', label: 'Seasonal Analysis' }
+    { id: 'accessory-comparison', label: 'Comparison' }
 ];
 
 const stateSubNavItems = [
@@ -35,7 +34,7 @@ export default function Sidebar() {
         case 'state':
             return 'US MAP';
         case 'my-data':
-            return 'My Data';
+            return 'Accessories';
         case 'our-data':
             return 'Our Data';
         case 'settings':
@@ -58,7 +57,7 @@ export default function Sidebar() {
                 </Link>
             ));
         case 'my-data':
-            return myDataSubNavItems.map(item => (
+            return accessoriesSubNavItems.map(item => (
                 <Link 
                     key={`my-data-${item.id}`} 
                     className={pathname.includes(item.id) ? 'active' : ''}

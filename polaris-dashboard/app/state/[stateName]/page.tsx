@@ -13,7 +13,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function StateDetailPage() {
-    const { stateName } = useParams(); 
+    const { stateName } = useParams() as { stateName: string };
 
     const { data: vehicleData, error: vehicleError } = useSWR(
         `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(stateName)}`,
@@ -69,11 +69,15 @@ export default function StateDetailPage() {
                 {accessoryData ? (
                     <Bar
                         data={{
-                            labels: accessoryData.map((a: any) => a.property_name),
+                            labels: accessoryData
+                                .filter((a: any) => a.property_name !== 'vehicle_engine_speed')
+                                .map((a: any) => a.property_name),
                             datasets: [
                                 {
                                     label: "Usage Count",
-                                    data: accessoryData.map((a: any) => a.usage_count),
+                                    data: accessoryData
+                                        .filter((a: any) => a.property_name !== 'vehicle_engine_speed')
+                                        .map((a: any) => a.usage_count),
                                     backgroundColor: "rgba(255, 99, 132, 0.6)",
                                 },
                             ],

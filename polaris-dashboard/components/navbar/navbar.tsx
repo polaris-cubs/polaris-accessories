@@ -12,7 +12,7 @@ import { usePathname } from 'next/navigation';
 
 const mainNavItems = [
     { id: 'home', path: '/', label: 'US MAP' },
-    { id: 'my-data', path: '/my-data', label: 'My Data' },
+    { id: 'my-data', path: '/my-data', label: 'Accessories' },
     { id: 'our-data', path: '/our-data', label: 'Our Data' },
     { id: 'settings', path: '/settings', label: 'Settings' }
 ];
