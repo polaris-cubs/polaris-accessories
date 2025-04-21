@@ -63,7 +63,7 @@ const columns = [
     { name: "Brand", uid: "brand", sortable: true },
     { name: "Customer ID", uid: "customer_id", sortable: true },
     { name: "Timestamp", uid: "event_timestamp", sortable: true },
-    { name: "Props (JSON)", uid: "property_values" },
+    { name: "Props", uid: "property_values" },
 ];
 
 // near the top, alongside your imports
