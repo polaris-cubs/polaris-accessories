@@ -99,16 +99,16 @@ export function DataContent() {
                 page === 1
                     ? data.Rows
                     : [
-                        ...prev,
-                        ...data.Rows.filter(
-                            (r) =>
-                                !prev.some(
-                                    (p) =>
-                                        `${p.ride_id}-${p.event_timestamp}-${JSON.stringify(p.property_values)}` ===
+                          ...prev,
+                          ...data.Rows.filter(
+                              (r) =>
+                                  !prev.some(
+                                      (p) =>
+                                          `${p.ride_id}-${p.event_timestamp}-${JSON.stringify(p.property_values)}` ===
                                           `${r.ride_id}-${r.event_timestamp}-${JSON.stringify(r.property_values)}`,
-                                ),
-                        ),
-                    ],
+                                  ),
+                          ),
+                      ],
             );
         },
         [pageSize],
@@ -1278,11 +1278,8 @@ export default function OurDataWrapper() {
     if (!hasMounted) return null;
 
     return (
-        <div className="flex w-[100%] h-screen">
-            <Sidebar className="w-[20%] h-full" />
-            <div className="flex-1">
-                <DataContent />
-            </div>
+        <div className="flex-1 pl-[15%]">
+            <DataContent />
         </div>
     );
 }
