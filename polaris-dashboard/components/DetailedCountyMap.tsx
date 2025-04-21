@@ -13,7 +13,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 
 // Mapping of state names to their two-digit FIPS prefixes
-const stateFipsMapping = {
+const stateFipsMapping: Record<string, string> = {
     Alabama: "01",
     Alaska: "02",
     Arizona: "04",
@@ -67,7 +67,7 @@ const stateFipsMapping = {
 };
 
 // Approximate center coordinates and zoom levels for each state
-const stateCenterMapping = {
+const stateCenterMapping: Record<string, { center: [number, number]; zoom: number }> = {
     Alabama: { center: [-86.9023, 32.3182], zoom: 5 },
     Alaska: { center: [-154.4931, 63.5887], zoom: 3 },
     Arizona: { center: [-111.0937, 34.0489], zoom: 5 },
@@ -123,31 +123,28 @@ const stateCenterMapping = {
 export default function DetailedCountyMap({ stateName }: { stateName: string }) {
     const router = useRouter();
 
-    const stateFips = stateFipsMapping[stateName];
+    // Convert state name to proper case (e.g., "minnesota" -> "Minnesota")
+    const formattedStateName = stateName.charAt(0).toUpperCase() + stateName.slice(1).toLowerCase();
+    const stateFips = stateFipsMapping[formattedStateName];
 
     const { data: vehicleData, error: vehicleError } = useSWR(
-        `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(stateName)}`,
+        `http://localhost:8080/api/vehicle-summary?state=${encodeURIComponent(formattedStateName)}`,
         fetcher
     );
     
     const { data: accessoryData, error: accessoryError } = useSWR(
-        `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(stateName)}`,
+        `http://localhost:8080/api/accessory-summary?state=${encodeURIComponent(formattedStateName)}`,
         fetcher
     );
 
     if (!stateFips) {
-        return <div className="text-red-500">❌ No FIPS mapping available for {stateName}</div>;
+        return <div className="text-red-500">❌ No FIPS mapping available for {formattedStateName}</div>;
     }
 
-    
-            
-    
-    const { center, zoom } = stateCenterMapping[stateName] || { center: [-98, 39], zoom: 5 };
+    const { center, zoom } = stateCenterMapping[formattedStateName] || { center: [-98, 39], zoom: 5 };
 
     return (
         <div className="relative flex flex-col items-center">
-
-
             <div className="w-[800px] h-[600px] bg-white shadow-md rounded-lg p-4">
                 <ComposableMap projection="geoAlbersUsa">
                     <ZoomableGroup center={center} zoom={zoom}>
@@ -208,13 +205,6 @@ export default function DetailedCountyMap({ stateName }: { stateName: string }) 
                     </ul>
                 )}
             </div>
-
-            <button
-                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() => router.push(`/state/${stateName}`)}
-            >
-                View Detailed Data for {stateName}
-            </button>
         </div>
     );
 }

@@ -99,16 +99,16 @@ export function DataContent() {
                 page === 1
                     ? data.Rows
                     : [
-                          ...prev,
-                          ...data.Rows.filter(
-                              (r) =>
-                                  !prev.some(
-                                      (p) =>
-                                          `${p.ride_id}-${p.event_timestamp}-${JSON.stringify(p.property_values)}` ===
+                        ...prev,
+                        ...data.Rows.filter(
+                            (r) =>
+                                !prev.some(
+                                    (p) =>
+                                        `${p.ride_id}-${p.event_timestamp}-${JSON.stringify(p.property_values)}` ===
                                           `${r.ride_id}-${r.event_timestamp}-${JSON.stringify(r.property_values)}`,
-                                  ),
-                          ),
-                      ],
+                                ),
+                        ),
+                    ],
             );
         },
         [pageSize],

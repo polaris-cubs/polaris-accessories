@@ -180,7 +180,7 @@ export default function Winch() {
             tooltip: {
                 callbacks: {
                     label: function(context) {
-                        return `Average uses: ${context.raw.toFixed(2)}`;
+                        return `Average uses: ${Number(context.raw).toFixed(2)}`;
                     }
                 }
             }

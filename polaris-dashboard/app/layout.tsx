@@ -4,9 +4,10 @@ import clsx from "clsx";
 
 import { Providers } from "./providers";
 
-import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar/navbar";
+import Sidebar from "@/components/sidebar/sidebar";
+import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
     title: {
@@ -34,9 +35,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
                     <div className="relative flex flex-col h-screen">
                         <Navbar />
-                        <main className="container mx-auto max-w-7xl pt-32 flex-grow">
-                            {children}
-                        </main>
+                        <div className="flex flex-1 pt-16">
+                            <Sidebar />
+                            <main className="flex-1 p-6">
+                                {children}
+                            </main>
+                        </div>
                     </div>
                 </Providers>
             </body>
