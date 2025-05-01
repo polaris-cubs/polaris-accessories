@@ -3,7 +3,16 @@
 // Import React and chart dependencies
 import React, { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions } from "chart.js";
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ChartOptions,
+} from "chart.js";
 
 import Sidebar from "@/components/sidebar/sidebar";
 import "@/app/my-data/my-data.css";
@@ -36,16 +45,28 @@ export default function MyData() {
                 const res = await fetch("http://localhost:8080/api/accessory-summary");
                 const data = await res.json();
 
-                // Aggregate usage counts by property_name
+                // Define valid accessory property names only
+                const accessoryProperties = new Set([
+                    "plow_state",
+                    "spreader_fill",
+                    "spreader_state",
+                    "winch_power",
+                    "light_bar_state",
+                    "audio_system_volume_level",
+                ]);
+
+                // Aggregate usage counts by accessory property_name only
                 const usageMap: Record<string, number> = {};
 
                 data.forEach((item: any) => {
                     const key = item.property_name;
 
-                    if (usageMap[key]) {
-                        usageMap[key] += item.usage_count;
-                    } else {
-                        usageMap[key] = item.usage_count;
+                    if (accessoryProperties.has(key)) {
+                        if (usageMap[key]) {
+                            usageMap[key] += item.usage_count;
+                        } else {
+                            usageMap[key] = item.usage_count;
+                        }
                     }
                 });
 

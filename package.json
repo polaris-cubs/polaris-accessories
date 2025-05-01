@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@mui/icons-material": "^7.0.2",
     "chartjs-adapter-date-fns": "^3.0.0"
   }
 }
